@@ -1,13 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RootNamespace>stereo_matching_practice</RootNamespace>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <RootNamespace>stereo_matching_practice</RootNamespace>
   </PropertyGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="stereo-matching-practice.fsproj">
+      <Name>stereo-matching-practice.fsproj</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
+    <Compile Include="SAD.fs" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Argu" Version="5.2.0" />
+  </ItemGroup>
 </Project>
