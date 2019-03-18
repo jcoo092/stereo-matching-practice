@@ -1,3 +1,3 @@
 module SAD
 
-let sad = ()
+let sad parameters = [||]

@@ -2,6 +2,12 @@
 
 open System
 open Argu
+open System.IO
+open SAD
+open SixLabors.ImageSharp
+open SixLabors.ImageSharp.PixelFormats
+open SixLabors.ImageSharp.Processing
+open SixLabors.ImageSharp.Advanced
 
 type MatchingAlgorithms =
     | SAD
@@ -31,19 +37,42 @@ The total size of the window will thus be n x n, where n is the input size here"
             | Algorithm _ -> "The specific choice of stereo matching algorithm to be used"
             | Z -> "Use the zero-mean version of the algorithm (only applies currently to SAD and SSD)"
 
-let processWindowSizeArgument (results : ParseResults<CLIArguments>) =
-    let result = results.TryGetResult Window
-    match result with
-    | Some(w) -> w
-    | None -> 3
+type Parameters = {
+    leftImage: byte []
+    rightImage: byte []
+    width: int
+    height: int
+    windowEdgeSize: int
+    maximumDisparity: int
+    zeroMean: bool
+}
 
-let processMaximumDisparityArgument (results : ParseResults<CLIArguments>) =
-    let result = results.TryGetResult Window
-    match result with
-    | Some(d) -> d
-    | None -> 32
+let getAlgorithmString =
+    function
+    | SAD -> "SAD"
+    | SSD -> "SSD"
+    | DynamicProgramming -> "Dynamic_Programming"
+    | BeliefPropagation -> "Belief_Propagation"
 
-let doNothing = 5
+let determineOutputFilename (results : ParseResults<CLIArguments>) =
+    let algorithmString = results.GetResult Algorithm |> getAlgorithmString
+    let leftImageName = results.GetResult LeftImage
+    let leftimagewithoutextension = Path.GetFileNameWithoutExtension leftImageName
+    let leftImageExtension = Path.GetExtension leftImageName
+    let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
+    //leftimagewithoutextension + "_" + algorithmString + leftImageExtension
+    sprintf "%s_%s%s.%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
+
+let openImageAndConvertToGrayscaleArray (imagePath : string) =
+    use img = Image.Load(imagePath)
+    img.Mutate(fun x -> x.Grayscale() |> ignore)
+    img.GetPixelSpan().ToArray() |> Array.Parallel.map (fun p -> p.R)
+
+let getImageSize (imagePath : string) =
+    use img = Image.Load(imagePath)
+    (img.Width, img.Height)
+
+let makeGray8 intensity = Gray8(intensity)
 
 [<EntryPoint>]
 let main argv =
@@ -53,18 +82,35 @@ let main argv =
 
     let results = parser.ParseCommandLine argv
 
-    printfn "Got parse results %A" <| results.GetAllResults()
+    //printfn "Got parse results %A" <| results.GetAllResults()
 
-    let returnedArray =
+    let imgWidth, imgHeight = results.GetResult LeftImage |> getImageSize
+
+    let outputImageArray =
+        let matchingParameters = {
+            leftImage = results.GetResult LeftImage |> openImageAndConvertToGrayscaleArray
+            rightImage = results.GetResult RightImage |> openImageAndConvertToGrayscaleArray
+            width = imgWidth
+            height = imgHeight
+            windowEdgeSize = results.TryGetResult Window |> Option.defaultValue 3
+            maximumDisparity = results.TryGetResult MaximumDisparity |> Option.defaultValue 32
+            zeroMean = results.Contains Z
+        }
         match results.GetResult Algorithm with
-        | SAD -> doNothing
-        | SSD -> doNothing
-        | DynamicProgramming -> doNothing
-        | BeliefPropagation -> doNothing
+        | SAD -> sad matchingParameters
+        | SSD -> [||]
+        | DynamicProgramming -> [||]
+        | BeliefPropagation -> [||]
 
+    let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
 
+    let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
+                            (determineOutputFilename results)
 
+    //use outFile = new System.IO.FileStream((results.GetResult OutputDirectory) + @"\" + outputFilename, FileMode.OpenOrCreate)
 
+    outputImage.Save(outputFilename)
 
+    printfn "Saved stereo-matching-result image to %s" outputFilename
     //printfn "Hello World from F#!"
     0 // return an integer exit code
