@@ -3,7 +3,9 @@
 open System
 open Argu
 open System.IO
+open Common
 open SAD
+open DynamicProgramming
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.PixelFormats
 open SixLabors.ImageSharp.Processing
@@ -37,16 +39,6 @@ The total size of the window will thus be n x n, where n is the input size here"
             | Algorithm _ -> "The specific choice of stereo matching algorithm to be used"
             | Z -> "Use the zero-mean version of the algorithm (only applies currently to SAD and SSD)"
 
-type Parameters = {
-    leftImage: byte []
-    rightImage: byte []
-    width: int
-    height: int
-    windowEdgeSize: int
-    maximumDisparity: int
-    zeroMean: bool
-}
-
 let getAlgorithmString =
     function
     | SAD -> "SAD"
@@ -66,7 +58,9 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
     img.Mutate(fun x -> x.Grayscale() |> ignore)
+    //let pspan = img.GetPixelSpan()
     img.GetPixelSpan().ToArray() |> Array.Parallel.map (fun p -> p.R)
+    //img.GetPixelSpan()
 
 let getImageSize (imagePath : string) =
     use img = Image.Load(imagePath)
@@ -97,10 +91,10 @@ let main argv =
             zeroMean = results.Contains Z
         }
         match results.GetResult Algorithm with
-        | SAD -> sad matchingParameters
-        | SSD -> [||]
-        | DynamicProgramming -> [||]
-        | BeliefPropagation -> [||]
+        | SAD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
+        | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
+        | DynamicProgramming -> dynamicProgramming matchingParameters
+        | BeliefPropagation -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
 
