@@ -3,7 +3,7 @@ module DynamicProgramming
 open Common
 open System
 
-let matchAlongScanline maxDisparity differenceFunction (leftLine, rightLine) =
+let matchAlongScanline maxDisparity differenceFunction (leftLine : 'a [], rightLine : 'a []) =
     let diffF = differenceFunction leftLine rightLine
     let lineLength = leftLine.Length
     let forwardPass = Array2D.zeroCreate (maxDisparity + 1) lineLength
@@ -49,12 +49,14 @@ let matchAlongScanline maxDisparity differenceFunction (leftLine, rightLine) =
     outputArray
 
 let dynamicProgramming parameters =
-    let leftSlices = buildSlices parameters Left
+    //let leftSlices = buildSlices parameters Left
     //let leftSlices = buildArraySegments parameters Left
-    let rightSlices = buildSlices parameters Right
+    let leftSlices = buildArraySlices parameters Left
+    //let rightSlices = buildSlices parameters Right
     //let rightSlices = buildArraySegments parameters Right
+    let rightSlices = buildArraySlices parameters Right
     let slicesZip = Array.zip leftSlices rightSlices
-    //let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity arraysSquaredDifference) slicesZip
-    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity slicesSquaredDifference) slicesZip
+    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity arraysSquaredDifference) slicesZip
+    //let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity slicesSquaredDifference) slicesZip
     Array.concat matchedLines
     //[||]
