@@ -2,6 +2,9 @@ module Common
 
 open System
 open System.Runtime.CompilerServices
+open FSharp.Span.Utils
+
+type LeftOrRight = | Left | Right
 
 [<Struct; IsByRefLike>]
 type Parameters = {
@@ -29,22 +32,32 @@ let inline arraysAbsoluteDifference (a: ^a[]) (b: ^a[]) i d =
     let b' = b.[i - d]
     absoluteDifference a' b'
 
-// let inline slicesSquaredDifference (a: ReadOnlySpan<^a>) (b: ReadOnlySpan<^a>) i d =
-//     let a' = a.[i]
-//     let b' = b.[i - d]
-//     squaredDifference a' b'
+let inline slicesSquaredDifference (a: ReadOnlySpan<_>) (b: ReadOnlySpan<_>) i d =
+    let a' = a.[i]
+    let b' = b.[i - d]
+    squaredDifference a' b'
 
-// let buildSlices parameters useLeftImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
-//     //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)
-//     let slicer = if useLeftImage then parameters.leftImage else parameters.rightImage
-//     let width = parameters.width
-//     let slices = Array.zeroCreate parameters.height
-//     for i in 0..(parameters.height - 1) do
-//         slices.[i] <- slicer.Slice(i * width, width)
-//     slices
+let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
+    //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)
+    //let slicer = if usedImage then parameters.leftImage else parameters.rightImage
+    let subjectArray = match usedImage with
+                        | Left -> parameters.leftImage
+                        | Right -> parameters.rightImage
+                        |> ReadOnlySpan.ofArray
+    let width = parameters.width
+    let slices = Array.zeroCreate parameters.height
+    for i in 0..(parameters.height - 1) do
+        //slices.[i] <- subjectArray.Slice(i * width, width)
+        slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
+    slices
 
-let buildArraySegments parameters useLeftImage =
-    let subjectArray = if useLeftImage then parameters.leftImage else parameters.rightImage
+
+
+let buildArraySegments parameters usedImage =
+    //let subjectArray = if useLeftImage then parameters.leftImage else parameters.rightImage
+    let subjectArray = match usedImage with
+                        | Left -> parameters.leftImage
+                        | Right -> parameters.rightImage
     let width = parameters.width
     let slices = Array.zeroCreate parameters.height
     for i in 0..(parameters.height - 1) do

@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Argu" Version="5.2.0" />
+    <PackageReference Include="FSharp.Span.Utils" Version="1.1.3353.13900" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
   </ItemGroup>
 </Project>

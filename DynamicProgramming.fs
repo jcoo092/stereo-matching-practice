@@ -49,11 +49,12 @@ let matchAlongScanline maxDisparity differenceFunction (leftLine, rightLine) =
     outputArray
 
 let dynamicProgramming parameters =
-    //let leftSlices = buildSlices parameters true
-    let leftSlices = buildArraySegments parameters true
-    //let rightSlices = buildSlices parameters false
-    let rightSlices = buildArraySegments parameters false
+    let leftSlices = buildSlices parameters Left
+    //let leftSlices = buildArraySegments parameters Left
+    let rightSlices = buildSlices parameters Right
+    //let rightSlices = buildArraySegments parameters Right
     let slicesZip = Array.zip leftSlices rightSlices
-    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity arraysAbsoluteDifference) slicesZip
-
-    [||]
+    //let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity arraysSquaredDifference) slicesZip
+    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity slicesSquaredDifference) slicesZip
+    Array.concat matchedLines
+    //[||]
