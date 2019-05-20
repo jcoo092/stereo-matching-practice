@@ -8,6 +8,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="SAD.fs" />
     <Compile Include="DynamicProgramming.fs" />
+    <Compile Include="BeliefPropagation.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
