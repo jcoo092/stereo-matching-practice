@@ -3,16 +3,17 @@ module Common
 open System
 open System.Runtime.CompilerServices
 open FSharp.Span.Utils
-open System.Runtime.CompilerServices
 
 type LeftOrRight = | Left | Right
 
 [<Struct; IsByRefLike>]
-type Parameters = {
-    leftImage: byte []
+type Parameters<'a> = {
+    //leftImage: byte []
     //leftImage: ReadOnlySpan<byte>
-    rightImage: byte []
+    leftImage: 'a []
+    //rightImage: byte []
     //rightImage: ReadOnlySpan<byte>
+    rightImage: 'a []
     width: int
     height: int
     windowEdgeSize: int
@@ -23,7 +24,7 @@ type Parameters = {
 let inline squaredDifference a b = pown (a - b) 2
 let inline absoluteDifference a b = abs (a - b)
 
-let inline arraysSquaredDifference (a: ^a[]) (b: ^a[]) i d =
+let inline arraysSquaredDifference (a: ^a []) (b: ^a []) i d =
     let a' = a.[i]
     let b' = b.[i - d]
     squaredDifference a' b'

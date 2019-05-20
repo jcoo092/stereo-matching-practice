@@ -93,7 +93,17 @@ let main argv =
         match results.GetResult Algorithm with
         | SAD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
         | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
-        | DynamicProgramming -> dynamicProgramming matchingParameters
+        | DynamicProgramming -> 
+            let updatedMatchingParameters = {
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map uint32
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map uint32
+                width = matchingParameters.width
+                height = matchingParameters.height
+                windowEdgeSize = matchingParameters.windowEdgeSize
+                maximumDisparity = matchingParameters.maximumDisparity
+                zeroMean = matchingParameters.zeroMean
+            }
+            dynamicProgramming updatedMatchingParameters |> Array.Parallel.map byte
         | BeliefPropagation -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
