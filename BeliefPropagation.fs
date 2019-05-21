@@ -4,6 +4,7 @@ module BeliefPropagation
 
 open Common
 open System.Runtime.CompilerServices
+open System
 
 [<Struct; IsByRefLike>]
 type BPParameters<'a,'b> = {
@@ -15,7 +16,7 @@ type BPParameters<'a,'b> = {
 [<Struct; IsByRefLike>]
 type Proxel<'a> = {
     neighbours: int[]
-    neighbourMessages: 'a[]
+    neighbourMessages: 'a[][]
     dataCosts: 'a[]
 }
 
@@ -24,7 +25,7 @@ type Proxel<'a> = {
 //     let leftIntensity = parameters.leftImage.[i]
 //     for x = 0 to parameters.maximumDisparity do
 //         retArr.[x] <- bpparameters.dataFunction leftIntensity (parameters.rightImage.[i - x])
-//     retArr  
+//     retArr
 
 let computeDataCosts parameters bpparameters i =
     Array.init (parameters.maximumDisparity + 1) (
@@ -32,7 +33,7 @@ let computeDataCosts parameters bpparameters i =
             bpparameters.dataFunction parameters.leftImage.[i] parameters.rightImage.[i - j]
         )
 
-let computeSmoothnessCosts parameters bpparameters = 
+let computeSmoothnessCosts parameters bpparameters =
     Array2D.init (parameters.maximumDisparity + 1) (parameters.maximumDisparity + 1) bpparameters.smoothnessFunction
 
 // let computeNeighbours parameters i =
@@ -51,18 +52,42 @@ let computeNeighbours parameters i =
         if i + parameters.width >= parameters.height * parameters.width - 1 then yield i + parameters.width;
     |]
 
-let makeProxels (parameters: Parameters<_>) bpparameters = 
+let makeProxels (parameters: Parameters<_>) bpparameters =
     // let bothImages = Array.zip parameters.leftImage parameters.rightImage
     // let dataCosts = Array.Parallel.map (fun x -> bpparameters.dataFunction <|| x) bothImages
-    Array.Parallel.init (Array.length parameters.leftImage) (        
+    Array.Parallel.init (Array.length parameters.leftImage) (
         fun i ->
             let neigh = computeNeighbours parameters i
             {dataCosts = computeDataCosts parameters bpparameters i;
-             neighbours = neigh; 
+             neighbours = neigh;
              neighbourMessages = Array.zeroCreate (Array.length neigh)}
     )
 
-let beliefpropagation parameters bpparameters = 
+let normalize messageArray =
+    let divisor = Array.max messageArray
+    Array.map (fun i -> i / divisor) messageArray
+
+
+// Based on equation 2 on page 42 of Felzenswalb & Huttenlocher 2006
+let computeMessage parameters bpparameters neighbour proxel =
+    let outgoingMessages = Array.zeroCreate parameters.maximumDisparity
+    let mutable minCost = Int32.MaxValue
+    for i = 0 to parameters.maximumDisparity do
+        minCost <- Int32.MaxValue
+        for j = 0 to parameters.maximumDisparity do
+            let messagesSum = (Array.sum proxel.neighbourMessages.[j]) - proxel.neighbourMessages.[j].[neighbour]
+            let smoothnessCost = bpparameters.smoothnessFunction i j
+            let totalCost = messagesSum + smoothnessCost + proxel.dataCosts.[j]
+            if totalCost < minCost then minCost <- totalCost
+        outgoingMessages.[i] <- minCost
+
+    normalize outgoingMessages
+
+let computeMessages parameters bpparameters proxel =
+    Array.mapi (computeMessage parameters bpparameters) proxel
+
+
+let beliefpropagation parameters bpparameters =
     let smoothnessCosts = computeSmoothnessCosts parameters bpparameters
     let proxels = makeProxels parameters bpparameters
 
