@@ -21,6 +21,10 @@ type Parameters<'a> = {
     zeroMean: bool
 }
 
+// Taken from 'Average of Integers', listed at http://aggregate.org/MAGIC/#Average%20of%20Integers accessed on 14 June 2019
+let inline twoParameterMean a b = 
+    (a &&& b) + ((a ^^^ b) >>> 1)
+
 let inline squaredDifference a b = pown (a - b) 2
 let inline absoluteDifference a b = abs (a - b)
 
@@ -38,6 +42,35 @@ let inline slicesSquaredDifference (a: ReadOnlyMemory< ^a >) (b: ReadOnlyMemory<
     let a' = a.Span.[i]
     let b' = b.Span.[i - d]
     squaredDifference a' b'
+
+let inline potts a b lambda = 
+    if a = b then
+        LanguagePrimitives.GenericZero
+    else
+        lambda
+
+let inline truncatedLinear a b lambda k = 
+    lambda * (min (absoluteDifference a b) k)
+
+let inline truncatedQuadratic a b lambda k = 
+    lambda * (min (squaredDifference a b) k)
+
+// This function is directly lifted from A Pixel Dissimilarity Measure That Is Insensitive to Image Sampling (1998) by Birchfield & Tomasi
+// Interestingly, in their notation they seem to operate on the basis of a functional representation of the image
+// That is, they have a function that takes a given coordinate, and returns the corresponding intensity
+// For the below, ln is the I^-_L and lp is the I^+_L, while l is I_L(x_L), and much the same for the right image values
+let inline birchfieldTomasi ln l lp rn r rp = 
+    // For the below, a corresponds to I_L(x_l), b to I_R(x_r), c to x_{r - 1}, d to x_{r + 1}
+    let inline computeDBar a b c d = 
+        let irminus = twoParameterMean b c
+        let irplus = twoParameterMean b d
+        let imin = min b (min irminus irplus)
+        let imax = max b (max irminus irplus)
+        max LanguagePrimitives.GenericZero (max (a - imax) (imin - a)) // Currently an issue here, in that the subtractions might underflow...        
+
+    let dbarleft = computeDBar l r rn rp
+    let dbarright = computeDBar r l ln lp
+    min dbarleft dbarright
 
 let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
     //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)

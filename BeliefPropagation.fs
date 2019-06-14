@@ -1,4 +1,4 @@
-// Currently just trying to focus on a basic version of 2D loopy belief propagation
+// Currently just trying to focus on a basic version of max-sum 2D loopy belief propagation
 
 module BeliefPropagation
 
