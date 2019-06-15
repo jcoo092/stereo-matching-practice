@@ -33,9 +33,6 @@ let computeDataCosts parameters bpparameters i =
             bpparameters.dataFunction parameters.leftImage.[i] parameters.rightImage.[i - j]
         )
 
-let computeSmoothnessCosts parameters bpparameters =
-    Array2D.init (parameters.maximumDisparity + 1) (parameters.maximumDisparity + 1) bpparameters.smoothnessFunction
-
 // let computeNeighbours parameters i =
 //     [|
 //         (if i - 1 < 0 then None else Some(i - 1));
@@ -68,7 +65,7 @@ let normalize messageArray =
     Array.map (fun i -> i / divisor) messageArray
 
 
-// Based on equation 2 on page 42 of Felzenswalb & Huttenlocher 2006
+// Based on equation 2 on page 42 of Felzenswalb & Huttenlocher (2006)
 let computeMessage parameters bpparameters neighbour proxel =
     let outgoingMessages = Array.zeroCreate parameters.maximumDisparity
     let mutable minCost = Int32.MaxValue
@@ -88,7 +85,7 @@ let computeMessages parameters bpparameters proxel =
 
 
 let beliefpropagation parameters bpparameters =
-    let smoothnessCosts = computeSmoothnessCosts parameters bpparameters
+    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
     let proxels = makeProxels parameters bpparameters
 
 

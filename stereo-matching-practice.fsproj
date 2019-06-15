@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Common.fs" />
+    <Compile Include="Smoothness.fs" />
     <Compile Include="SAD.fs" />
     <Compile Include="DynamicProgramming.fs" />
     <Compile Include="BeliefPropagation.fs" />

@@ -25,6 +25,12 @@ type Parameters<'a> = {
 let inline twoParameterMean a b = 
     (a &&& b) + ((a ^^^ b) >>> 1)
 
+let inline saturingSubtraction minuend subtrahend = 
+    if subtrahend > minuend then
+        LanguagePrimitives.GenericZero
+    else
+        minuend - subtrahend
+
 let inline squaredDifference a b = pown (a - b) 2
 let inline absoluteDifference a b = abs (a - b)
 
@@ -43,18 +49,6 @@ let inline slicesSquaredDifference (a: ReadOnlyMemory< ^a >) (b: ReadOnlyMemory<
     let b' = b.Span.[i - d]
     squaredDifference a' b'
 
-let inline potts a b lambda = 
-    if a = b then
-        LanguagePrimitives.GenericZero
-    else
-        lambda
-
-let inline truncatedLinear a b lambda k = 
-    lambda * (min (absoluteDifference a b) k)
-
-let inline truncatedQuadratic a b lambda k = 
-    lambda * (min (squaredDifference a b) k)
-
 // This function is directly lifted from A Pixel Dissimilarity Measure That Is Insensitive to Image Sampling (1998) by Birchfield & Tomasi
 // Interestingly, in their notation they seem to operate on the basis of a functional representation of the image
 // That is, they have a function that takes a given coordinate, and returns the corresponding intensity
@@ -66,7 +60,7 @@ let inline birchfieldTomasi ln l lp rn r rp =
         let irplus = twoParameterMean b d
         let imin = min b (min irminus irplus)
         let imax = max b (max irminus irplus)
-        max LanguagePrimitives.GenericZero (max (a - imax) (imin - a)) // Currently an issue here, in that the subtractions might underflow...        
+        max LanguagePrimitives.GenericZero (max (saturingSubtraction a imax) (saturingSubtraction imin a))
 
     let dbarleft = computeDBar l r rn rp
     let dbarright = computeDBar r l ln lp
