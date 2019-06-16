@@ -22,10 +22,10 @@ let inline pottsFloat32 (lambda: float32) (a : float32) b =
 
 // d here matches to 'd' used in Felzenswalb & Huttenlocher (2006) - it is a truncation parameter
 let inline truncatedLinear lambda d a b =
-    (min (Common.absoluteDifference a b) d) |> float |> (*) lambda
+    (min (Data.absoluteDifference a b) d) |> float |> (*) lambda
 
 let inline truncatedQuadratic lambda d a b =
-    (min (Common.squaredDifference a b) d) |> float |> (*) lambda
+    (min (Data.squaredDifference a b) d) |> float |> (*) lambda
 
 // let computeSmoothnessCosts (parameters: Common.Parameters<'a>) bpparameters smoothnessFunction =
     // let left = parameters.leftImage

@@ -3,7 +3,6 @@
 module BeliefPropagation
 
 open Common
-open System.Runtime.CompilerServices
 open System
 
 //[<Struct; IsByRefLike>]
@@ -99,7 +98,7 @@ let computeFinalDisparities proxels =
 
 let beliefpropagation parameters bpparameters =
     //let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
-    let dataCosts = Common.computeDataCosts parameters Common.absoluteDifference |> Array.map (Array.map float32)
+    let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference |> Array.map (Array.map float32)
     let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH)
     let proxels = makeProxels parameters {bpparameters with dataCosts = dataCosts; smoothnessCosts = smoothnessCosts}
 

@@ -63,7 +63,7 @@ let dynamicProgramming parameters =
     //let rightSlices = buildArraySegments parameters Right
     let rightSlices = buildArraySlices parameters Right
     let slicesZip = Array.zip leftSlices rightSlices
-    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity arraysSquaredDifference) slicesZip
+    let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity Data.arraysSquaredDifference) slicesZip
     //let matchedLines = Array.Parallel.map (matchAlongScanline parameters.maximumDisparity slicesSquaredDifference) slicesZip
     Array.concat matchedLines
     //[||]
