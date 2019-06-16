@@ -9,6 +9,7 @@
     <Compile Include="Data.fs" />
     <Compile Include="Smoothness.fs" />
     <Compile Include="SAD.fs" />
+    <Compile Include="SSD.fs" />
     <Compile Include="DynamicProgramming.fs" />
     <Compile Include="BeliefPropagation.fs" />
     <Compile Include="Program.fs" />
