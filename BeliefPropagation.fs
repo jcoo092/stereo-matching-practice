@@ -6,18 +6,21 @@ open Common
 open System.Runtime.CompilerServices
 open System
 
-[<Struct; IsByRefLike>]
+//[<Struct; IsByRefLike>]
 type BPParameters<'a,'b> = {
     dataFunction: 'a -> 'a -> 'b
+    dataCosts: 'b [] []
     smoothnessFunction: int -> int -> 'b
+    smoothnessCosts: float32[,]
     iterations: int
 }
 
-[<Struct; IsByRefLike>]
+//[<Struct; IsByRefLike>]
 type Proxel<'a> = {
+    index: int
     neighbours: int[]
     neighbourMessages: 'a[][]
-    dataCosts: 'a[]
+    //dataCosts: 'a[]
 }
 
 // let computeDataCosts parameters bpparameters i =
@@ -55,7 +58,8 @@ let makeProxels (parameters: Parameters<_>) bpparameters =
     Array.Parallel.init (Array.length parameters.leftImage) (
         fun i ->
             let neigh = computeNeighbours parameters i
-            {dataCosts = computeDataCosts parameters bpparameters i;
+            {index = i
+             //dataCosts = computeDataCosts parameters bpparameters i;
              neighbours = neigh;
              neighbourMessages = Array.zeroCreate (Array.length neigh)}
     )
@@ -68,13 +72,17 @@ let normalize messageArray =
 // Based on equation 2 on page 42 of Felzenswalb & Huttenlocher (2006)
 let computeMessage parameters bpparameters neighbour proxel =
     let outgoingMessages = Array.zeroCreate parameters.maximumDisparity
-    let mutable minCost = Int32.MaxValue
+    //let mutable minCost = Int32.MaxValue
+    let mutable minCost = Single.MaxValue
     for i = 0 to parameters.maximumDisparity do
-        minCost <- Int32.MaxValue
+        //minCost <- Int32.MaxValue
+        minCost <- Single.MaxValue
         for j = 0 to parameters.maximumDisparity do
             let messagesSum = (Array.sum proxel.neighbourMessages.[j]) - proxel.neighbourMessages.[j].[neighbour]
-            let smoothnessCost = bpparameters.smoothnessFunction i j
-            let totalCost = messagesSum + smoothnessCost + proxel.dataCosts.[j]
+            //let smoothnessCost = bpparameters.smoothnessFunction i j
+            let smoothnessCost = bpparameters.smoothnessCosts.[proxel.index, j]
+            //let totalCost = messagesSum + smoothnessCost + proxel.dataCosts.[j]
+            let totalCost = messagesSum + smoothnessCost + bpparameters.dataCosts.[proxel.index].[j]
             if totalCost < minCost then minCost <- totalCost
         outgoingMessages.[i] <- minCost
 
@@ -83,10 +91,17 @@ let computeMessage parameters bpparameters neighbour proxel =
 let computeMessages parameters bpparameters proxel =
     Array.mapi (computeMessage parameters bpparameters) proxel
 
+let exchangeMessages proxels =
+    ()
+
+let computeFinalDisparities proxels =
+    5.0f |> byte
 
 let beliefpropagation parameters bpparameters =
-    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
-    let proxels = makeProxels parameters bpparameters
+    //let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
+    let dataCosts = Common.computeDataCosts parameters Common.absoluteDifference |> Array.map (Array.map float32)
+    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH)
+    let proxels = makeProxels parameters {bpparameters with dataCosts = dataCosts; smoothnessCosts = smoothnessCosts}
 
 
     for i = 1 to bpparameters.iterations do

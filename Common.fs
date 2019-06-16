@@ -6,7 +6,7 @@ open FSharp.Span.Utils
 
 type LeftOrRight = | Left | Right
 
-[<Struct; IsByRefLike>]
+//[<Struct; IsByRefLike>]
 type Parameters<'a> = {
     //leftImage: byte []
     //leftImage: ReadOnlySpan<byte>
@@ -22,10 +22,10 @@ type Parameters<'a> = {
 }
 
 // Taken from 'Average of Integers', listed at http://aggregate.org/MAGIC/#Average%20of%20Integers accessed on 14 June 2019
-let inline twoParameterMean a b = 
+let inline twoParameterMean a b =
     (a &&& b) + ((a ^^^ b) >>> 1)
 
-let inline saturingSubtraction minuend subtrahend = 
+let inline saturingSubtraction minuend subtrahend =
     if subtrahend > minuend then
         LanguagePrimitives.GenericZero
     else
@@ -53,9 +53,9 @@ let inline slicesSquaredDifference (a: ReadOnlyMemory< ^a >) (b: ReadOnlyMemory<
 // Interestingly, in their notation they seem to operate on the basis of a functional representation of the image
 // That is, they have a function that takes a given coordinate, and returns the corresponding intensity
 // For the below, ln is the I^-_L and lp is the I^+_L, while l is I_L(x_L), and much the same for the right image values
-let inline birchfieldTomasi ln l lp rn r rp = 
+let inline birchfieldTomasi ln l lp rn r rp =
     // For the below, a corresponds to I_L(x_l), b to I_R(x_r), c to x_{r - 1}, d to x_{r + 1}
-    let inline computeDBar a b c d = 
+    let inline computeDBar a b c d =
         let irminus = twoParameterMean b c
         let irplus = twoParameterMean b d
         let imin = min b (min irminus irplus)
@@ -65,6 +65,9 @@ let inline birchfieldTomasi ln l lp rn r rp =
     let dbarleft = computeDBar l r rn rp
     let dbarright = computeDBar r l ln lp
     min dbarleft dbarright
+
+let inline btDifference a b =
+    5
 
 let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
     //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)
@@ -80,11 +83,11 @@ let buildSlices parameters usedImage = // leftImage is a boolean, specifying whe
         slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
     slices
 
-let buildArraySlices parameters usedImage = 
+let buildArraySlices parameters usedImage =
     let subjectArray = match usedImage with
                         | Left -> parameters.leftImage
                         | Right -> parameters.rightImage
-    Array.chunkBySize parameters.width subjectArray  
+    Array.chunkBySize parameters.width subjectArray
 
 let buildArraySegments parameters usedImage =
     //let subjectArray = if useLeftImage then parameters.leftImage else parameters.rightImage
@@ -96,3 +99,15 @@ let buildArraySegments parameters usedImage =
     for i in 0..(parameters.height - 1) do
         slices.[i] <- ArraySegment(subjectArray, i * width, width)
     slices
+
+let computeDataCosts parameters dataCostFunction =
+    let data = Array.zeroCreate (parameters.width * parameters.height)
+    for x = 0 to parameters.width do
+        for y = 0 to parameters.height do
+            let leftIdx = x + y * parameters.height
+            let lowerBound = System.Math.Clamp(leftIdx - parameters.maximumDisparity, 0, leftIdx - parameters.maximumDisparity)
+            let currentPixelData = Array.zeroCreate (leftIdx - lowerBound)
+            for d = parameters.maximumDisparity downto lowerBound do
+                currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
+            data.[leftIdx] <- currentPixelData
+    data
