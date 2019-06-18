@@ -1,4 +1,6 @@
-// Currently just trying to focus on a basic version of max-sum 2D loopy belief propagation
+open Smoothness
+// Currently just trying to focus on a basic version of min-sum 2D loopy belief propagation
+// Using min-sum on the same basis that Felzenswalb & Huttenlocher substituted max-product with it
 
 module BeliefPropagation
 
@@ -96,15 +98,24 @@ let exchangeMessages proxels =
 let computeFinalDisparities proxels =
     5.0f |> byte
 
+// let beliefpropagation parameters bpparameters =
+//     //let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
+//     let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference |> Array.map (Array.map float32)
+//     let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH)
+//     let proxels = makeProxels parameters {bpparameters with dataCosts = dataCosts; smoothnessCosts = smoothnessCosts}
+
+
+//     for i = 1 to bpparameters.iterations do
+//         exchangeMessages proxels // make all the proxels 'exchange messages' with one another
+
+//     // Do the final computation to return the best-belief disparity
+//     Array.map computeFinalDisparities proxels
+
 let beliefpropagation parameters bpparameters =
-    //let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
-    let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference |> Array.map (Array.map float32)
-    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH)
-    let proxels = makeProxels parameters {bpparameters with dataCosts = dataCosts; smoothnessCosts = smoothnessCosts}
-
-
+    computeDataCosts parameters // need to pass in the images, at least
+    computeSmoothnessCosts parameters // will need the maximum disparity for the smoothness costs
+    initMessages // All messages will be 0 initially - need to work out how to represent the messages
     for i = 1 to bpparameters.iterations do
-        exchangeMessages proxels // make all the proxels 'exchange messages' with one another
+        updateMessages
 
-    // Do the final computation to return the best-belief disparity
-    Array.map computeFinalDisparities proxels
+    computeFinalDisparities
