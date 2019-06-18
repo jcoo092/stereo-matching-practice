@@ -1,10 +1,10 @@
-open Smoothness
 // Currently just trying to focus on a basic version of min-sum 2D loopy belief propagation
 // Using min-sum on the same basis that Felzenswalb & Huttenlocher substituted max-product with it
 
 module BeliefPropagation
 
 open Common
+open Smoothness
 open System
 
 //[<Struct; IsByRefLike>]
@@ -31,11 +31,11 @@ type Proxel<'a> = {
 //         retArr.[x] <- bpparameters.dataFunction leftIntensity (parameters.rightImage.[i - x])
 //     retArr
 
-let computeDataCosts parameters bpparameters i =
-    Array.init (parameters.maximumDisparity + 1) (
-        fun j ->
-            bpparameters.dataFunction parameters.leftImage.[i] parameters.rightImage.[i - j]
-        )
+// let computeDataCosts parameters bpparameters i =
+//     Array.init (parameters.maximumDisparity + 1) (
+//         fun j ->
+//             bpparameters.dataFunction parameters.leftImage.[i] parameters.rightImage.[i - j]
+//         )
 
 // let computeNeighbours parameters i =
 //     [|
@@ -111,11 +111,32 @@ let computeFinalDisparities proxels =
 //     // Do the final computation to return the best-belief disparity
 //     Array.map computeFinalDisparities proxels
 
+let initMessages parameters =
+    Array3D.zeroCreate (parameters.width * parameters.height) 4 parameters.maximumDisparity // 4 because I'm using the 4-neighbourhood
+
+let updateMessages maxD dataCosts smoothnessCosts neighbours m1 m2 = // this function computes updates to the messages, using input data from m1 and storing it into m2, then swaps their pointers
+    let findMin p q fq =
+        let messageCosts = m1.[p, 0, fq] + m1.[p, 1, fq] + m1.[p, 2, fq] + m1.[p, 3, fq] - m1.[p, q, fq]
+        let possibilities = Seq.init maxD
+                                (fun fp ->
+                                    smoothnessCosts.[fp, fq] + dataCosts.[p].[fp] + messageCosts
+                                )
+        Seq.min possibilities
+
+
+    for p = 0 to (Array3D.length1 m1) do
+        for q in neighbours.[p] do
+            for fq = 0 to maxD do
+                m2.[p,q,fq] <- findMin p q fq
+
+
 let beliefpropagation parameters bpparameters =
-    computeDataCosts parameters // need to pass in the images, at least
-    computeSmoothnessCosts parameters // will need the maximum disparity for the smoothness costs
-    initMessages // All messages will be 0 initially - need to work out how to represent the messages
+    let neighbours = Array.init (parameters.width * parameters.height) (computeNeighbours parameters)
+    let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference // need to pass in the images, at least
+    let smoothnessCosts = computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH) // will need the maximum disparity for the smoothness costs
+    let mutable messages1 = initMessages parameters // All messages will be 0 initially - need to work out how to represent the messages.  Big ol' array?
+    let mutable messages2 = Array2D.copy messages1
     for i = 1 to bpparameters.iterations do
-        updateMessages
+        updateMessages parameters.maximumDisparity messages1 messages2
 
     computeFinalDisparities
