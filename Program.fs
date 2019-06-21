@@ -86,6 +86,7 @@ let main argv =
             rightImage = results.GetResult RightImage |> openImageAndConvertToGrayscaleArray
             width = imgWidth
             height = imgHeight
+            totalPixels = imgHeight * imgWidth
             windowEdgeSize = results.TryGetResult Window |> Option.defaultValue 3
             maximumDisparity = results.TryGetResult MaximumDisparity |> Option.defaultValue 32
             zeroMean = results.Contains Z
@@ -93,12 +94,13 @@ let main argv =
         match results.GetResult Algorithm with
         | SAD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
         | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
-        | DynamicProgramming -> 
+        | DynamicProgramming ->
             let updatedMatchingParameters = {
                 leftImage = matchingParameters.leftImage |> Array.Parallel.map uint32
                 rightImage = matchingParameters.rightImage |> Array.Parallel.map uint32
                 width = matchingParameters.width
                 height = matchingParameters.height
+                totalPixels = matchingParameters.width * matchingParameters.height
                 windowEdgeSize = matchingParameters.windowEdgeSize
                 maximumDisparity = matchingParameters.maximumDisparity
                 zeroMean = matchingParameters.zeroMean

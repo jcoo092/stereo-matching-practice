@@ -15,6 +15,7 @@ type Parameters<'a> = {
     rightImage: 'a []
     width: int
     height: int
+    totalPixels: int
     windowEdgeSize: int
     maximumDisparity: int
     zeroMean: bool

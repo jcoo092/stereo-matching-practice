@@ -45,12 +45,23 @@ type Proxel<'a> = {
 //         (if i + parameters.width >= parameters.height * parameters.width - 1 then None else Some(i + parameters.width));
 //     |] |> Array.choose id
 
+// let computeNeighbours parameters i =
+//     [|
+//         if (i - 1) >= 0 then yield i - 1;
+//         if (i + 1) < parameters.width then yield i + 1;
+//         if (i - parameters.width) >= 0 then yield i - parameters.width;
+//         if (i + parameters.width) < (parameters.height * parameters.width - 1) then yield i + parameters.width;
+//     |]
+
 let computeNeighbours parameters i =
+    let x = i % parameters.width
+    let y = i / parameters.width
+
     [|
-        if i - 1 < 0 then yield i - 1;
-        if i + 1 >= parameters.width then yield i + 1;
-        if i - parameters.width < 0 then yield i - parameters.width;
-        if i + parameters.width >= parameters.height * parameters.width - 1 then yield i + parameters.width;
+        if y > 0 then yield i - parameters.width;
+        if x > 0 then yield i - 1;
+        if x < (parameters.width - 1) then yield i + 1;
+        if y < (parameters.height - 1) then yield i + parameters.width;
     |]
 
 let makeProxels (parameters: Parameters<_>) bpparameters =
@@ -92,9 +103,6 @@ let computeMessage parameters bpparameters neighbour proxel =
 let computeMessages parameters bpparameters proxel =
     Array.mapi (computeMessage parameters bpparameters) proxel
 
-let exchangeMessages proxels =
-    ()
-
 let computeFinalDisparities proxels =
     5.0f |> byte
 
@@ -112,30 +120,42 @@ let computeFinalDisparities proxels =
 //     Array.map computeFinalDisparities proxels
 
 let initMessages parameters =
-    Array3D.zeroCreate (parameters.width * parameters.height) 4 parameters.maximumDisparity // 4 because I'm using the 4-neighbourhood
+    //Array3D.zeroCreate (parameters.width * parameters.height) 4 parameters.maximumDisparity // 4 because I'm using the 4-neighbourhood
+    Array.init (parameters.width * parameters.height) (
+        fun i ->
+                let neighbours = computeNeighbours parameters i
+                Array.map (fun neighbour -> (neighbour, Array.zeroCreate parameters.maximumDisparity)) neighbours
+    )
+
+// let updateMessages maxD dataCosts smoothnessCosts neighbours m1 m2 = // this function computes updates to the messages, using input data from m1 and storing it into m2, then swaps their pointers
+//     let findMin p q fq =
+//         let messageCosts = m1.[p, 0, fq] + m1.[p, 1, fq] + m1.[p, 2, fq] + m1.[p, 3, fq] - m1.[p, q, fq]
+//         let possibilities = Seq.init maxD
+//                                 (fun fp ->
+//                                     smoothnessCosts.[fp, fq] + dataCosts.[p].[fp] + messageCosts
+//                                 )
+//         Seq.min possibilities
+
+
+//     for p = 0 to (Array3D.length1 m1) do
+//         for q in neighbours.[p] do
+//             for fq = 0 to maxD do
+//                 m2.[p,q,fq] <- findMin p q fq
 
 let updateMessages maxD dataCosts smoothnessCosts neighbours m1 m2 = // this function computes updates to the messages, using input data from m1 and storing it into m2, then swaps their pointers
-    let findMin p q fq =
-        let messageCosts = m1.[p, 0, fq] + m1.[p, 1, fq] + m1.[p, 2, fq] + m1.[p, 3, fq] - m1.[p, q, fq]
-        let possibilities = Seq.init maxD
-                                (fun fp ->
-                                    smoothnessCosts.[fp, fq] + dataCosts.[p].[fp] + messageCosts
-                                )
-        Seq.min possibilities
+    for i in m1 do // each pixel in the image
+        for j in m1.[i] do // each neighbour of the current pixel
+            // compute updates
+            // place them into m2's array
 
-
-    for p = 0 to (Array3D.length1 m1) do
-        for q in neighbours.[p] do
-            for fq = 0 to maxD do
-                m2.[p,q,fq] <- findMin p q fq
 
 
 let beliefpropagation parameters bpparameters =
-    let neighbours = Array.init (parameters.width * parameters.height) (computeNeighbours parameters)
+    //let neighbours = Array.init (parameters.width * parameters.height) (computeNeighbours parameters)
     let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference // need to pass in the images, at least
     let smoothnessCosts = computeSmoothnessCosts parameters (Smoothness.potts Smoothness.LAMBDA_FH) // will need the maximum disparity for the smoothness costs
     let mutable messages1 = initMessages parameters // All messages will be 0 initially - need to work out how to represent the messages.  Big ol' array?
-    let mutable messages2 = Array2D.copy messages1
+    let mutable messages2 = Array.copy messages1
     for i = 1 to bpparameters.iterations do
         updateMessages parameters.maximumDisparity messages1 messages2
 
