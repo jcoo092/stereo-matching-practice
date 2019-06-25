@@ -15,7 +15,6 @@ let inline potts lambda a b =
 
 let inline pottsFloat32 (lambda: float32) (a : float32) b =
     if System.Math.Abs(a - b) < System.Single.Epsilon then
-        //LanguagePrimitives.GenericZero
         0.0f
     else
         lambda
@@ -40,6 +39,8 @@ let inline truncatedQuadratic lambda d a b =
 //
     // Array.mapi (fun i x -> rangeOverD i) left
 
-let computeSmoothnessCosts (parameters : Common.Parameters<_>) smoothnessFunction =
-    let maxD = parameters.maximumDisparity
-    Array2D.init maxD maxD smoothnessFunction
+let inline computeSmoothnessCosts (parameters : Common.Parameters<_>) (smoothnessFunction : int -> int -> ^b)
+    (typeConversion : ^b -> ^c) =
+    //let maxD = parameters.maximumDisparity
+    //Array2D.init parameters.maximumDisparity parameters.maximumDisparity smoothnessFunction
+    Array2D.init parameters.maximumDisparity parameters.maximumDisparity (fun a b -> smoothnessFunction a b |> typeConversion)

@@ -106,7 +106,24 @@ let main argv =
                 zeroMean = matchingParameters.zeroMean
             }
             dynamicProgramming updatedMatchingParameters |> Array.Parallel.map byte
-        | BeliefPropagation -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
+        | BeliefPropagation ->
+            let updatedMatchingParameters = {
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte
+                width = matchingParameters.width
+                height = matchingParameters.height
+                totalPixels = matchingParameters.width * matchingParameters.height
+                windowEdgeSize = matchingParameters.windowEdgeSize
+                maximumDisparity = matchingParameters.maximumDisparity
+                zeroMean = matchingParameters.zeroMean
+            }
+
+            let bpparameters : BeliefPropagation.BPParameters<byte, 'b> = {
+                dataFunction = Data.manualAbsoluteDifference
+                smoothnessFunction = (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
+                iterations = 5
+            }
+            BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
 

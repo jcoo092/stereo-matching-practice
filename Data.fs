@@ -6,6 +6,12 @@ open Common
 let inline squaredDifference a b = pown (a - b) 2
 let inline absoluteDifference a b = abs (a - b)
 
+let inline manualAbsoluteDifference a b =
+    if a < b then
+        b - a
+    else
+        a - b
+
 let inline arraysSquaredDifference (a: ^a []) (b: ^a []) i d =
     let a' = a.[i]
     let b' = b.[i - d]
@@ -38,17 +44,18 @@ let inline birchfieldTomasi ln l lp rn r rp =
     let dbarright = computeDBar r l ln lp
     min dbarleft dbarright
 
+// TODO:  Finish this!
 let inline btDifference a b =
     5
 
-let computeDataCosts parameters dataCostFunction =
+let inline computeDataCosts (parameters : Common.Parameters<_>) (dataCostFunction : ^a -> ^a -> ^b) (typeConversion : ^b -> ^c)=
     let data = Array.zeroCreate (parameters.width * parameters.height)
     for x = 0 to parameters.width do
         for y = 0 to parameters.height do
-            let leftIdx = x + y * parameters.height
+            let leftIdx = x + y * parameters.width
             let lowerBound = System.Math.Clamp(leftIdx - parameters.maximumDisparity, 0, leftIdx - parameters.maximumDisparity)
             let currentPixelData = Array.zeroCreate (leftIdx - lowerBound)
             for d = parameters.maximumDisparity downto lowerBound do
-                currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
+                currentPixelData.[d] <- typeConversion <| dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             data.[leftIdx] <- currentPixelData
     data
