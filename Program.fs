@@ -96,8 +96,8 @@ let main argv =
         | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
         | DynamicProgramming ->
             let updatedMatchingParameters = {
-                leftImage = matchingParameters.leftImage |> Array.Parallel.map uint32
-                rightImage = matchingParameters.rightImage |> Array.Parallel.map uint32
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte //uint32
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte //uint32
                 width = matchingParameters.width
                 height = matchingParameters.height
                 totalPixels = matchingParameters.width * matchingParameters.height
@@ -118,9 +118,9 @@ let main argv =
                 zeroMean = matchingParameters.zeroMean
             }
 
-            let bpparameters : BeliefPropagation.BPParameters<byte, 'b> = {
+            let bpparameters : BeliefPropagation.BPParameters = {
                 dataFunction = Data.manualAbsoluteDifference
-                smoothnessFunction = (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH)
+                smoothnessFunction = (Smoothness.potts Smoothness.LAMBDA_FH)
                 iterations = 5
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters

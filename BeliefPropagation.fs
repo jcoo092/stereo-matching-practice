@@ -7,11 +7,9 @@ open Common
 open System
 
 //[<Struct; IsByRefLike>]
-type BPParameters<'a,'b> = {
-    dataFunction: 'a -> 'a -> 'b
-    //dataCosts: 'b [] []
-    smoothnessFunction: int -> int -> 'b
-    //smoothnessCosts: float32[,]
+type BPParameters = {
+    dataFunction: Byte -> Byte -> Single
+    smoothnessFunction: int -> int -> Single
     iterations: int
 }
 
@@ -33,14 +31,13 @@ let inline initMessages parameters =
                 Array.map (fun neighbour -> (neighbour, Array.zeroCreate parameters.maximumDisparity)) neighbours
     )
 
-let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,])
-    (m1 : (int * float32 [])[][]) (m2 : (int * float32 [])[][]) =
+let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
-    m1 |> Array.iteri(fun i p -> // each pixel in the image
+    Array.iteri(fun i p -> // each pixel in the image
         let neighbourMessageSums = Array.zeroCreate maxD
         for fp = 0 to maxD do
-            for (_, neighbourCosts) in p do
+            for (_, (neighbourCosts : float32 [])) in p do
                 neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
                 // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
                 // It's easier just to include them here
@@ -56,7 +53,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                         mincost <- totalCost
 
             m2.[neighbourIdx].[indexInNeighbour].[fq] <- mincost
-    )
+    ) m1
 
 let computeFinalDisparities parameters messages =
     Array.zeroCreate parameters.totalPixels
@@ -64,14 +61,11 @@ let computeFinalDisparities parameters messages =
 
 
 let beliefpropagation parameters bpparameters =
-    //let neighbours = Array.init (parameters.width * parameters.height) (computeNeighbours parameters)
-    //let dataCosts = Data.computeDataCosts parameters Data.absoluteDifference // need to pass in the images, at least
-    let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction float32
-    //let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters (Smoothness.pottsFloat32 Smoothness.LAMBDA_FH) // will need the maximum disparity for the smoothness costs
-    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters.smoothnessFunction float32
+    let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
+    let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters.smoothnessFunction
     let mutable messages1 = initMessages parameters // All messages will be 0 initially
     let mutable messages2 = Array.copy messages1
-    for i = 1 to bpparameters.iterations do
+    for _i = 1 to bpparameters.iterations do
         updateMessages parameters.maximumDisparity dataCosts smoothnessCosts messages1 messages2
         let temp = messages1
         messages1 <- messages2

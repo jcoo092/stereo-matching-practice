@@ -7,9 +7,15 @@ let TAU_FH = 15.0f
 [<Literal>]
 let D_FH = 1.7f
 
+// let inline potts lambda a b =
+//     if a = b then
+//         LanguagePrimitives.GenericZero
+//     else
+//         lambda
+
 let inline potts lambda a b =
     if a = b then
-        LanguagePrimitives.GenericZero
+        0.0f
     else
         lambda
 
@@ -26,6 +32,5 @@ let inline truncatedLinear lambda d a b =
 let inline truncatedQuadratic lambda d a b =
     (min (Data.squaredDifference a b) d) |> float |> (*) lambda
 
-let inline computeSmoothnessCosts (parameters : Common.Parameters<_>) (smoothnessFunction : int -> int -> ^b)
-    (typeConversion : ^b -> ^c) =
-    Array2D.init parameters.maximumDisparity parameters.maximumDisparity (fun a b -> smoothnessFunction a b |> typeConversion)
+let inline computeSmoothnessCosts (parameters : Common.Parameters) (smoothnessFunction : int -> int -> single) =
+    Array2D.init parameters.maximumDisparity parameters.maximumDisparity smoothnessFunction

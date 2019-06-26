@@ -6,13 +6,13 @@ open FSharp.Span.Utils
 type LeftOrRight = | Left | Right
 
 //[<Struct; IsByRefLike>]
-type Parameters<'a> = {
+type Parameters = {
     //leftImage: byte []
     //leftImage: ReadOnlySpan<byte>
-    leftImage: 'a []
+    leftImage: byte []
     //rightImage: byte []
     //rightImage: ReadOnlySpan<byte>
-    rightImage: 'a []
+    rightImage: byte []
     width: int
     height: int
     totalPixels: int
