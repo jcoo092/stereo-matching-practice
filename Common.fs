@@ -25,7 +25,7 @@ type Parameters = {
 let inline twoParameterMean a b =
     (a &&& b) + ((a ^^^ b) >>> 1)
 
-let inline saturingSubtraction minuend subtrahend =
+let inline saturatingSubtraction minuend subtrahend =
     if subtrahend > minuend then
         LanguagePrimitives.GenericZero
     else

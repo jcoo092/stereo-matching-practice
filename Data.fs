@@ -40,7 +40,7 @@ let inline birchfieldTomasi ln l lp rn r rp =
         let irplus = twoParameterMean b d
         let imin = min b (min irminus irplus)
         let imax = max b (max irminus irplus)
-        max LanguagePrimitives.GenericZero (max (saturingSubtraction a imax) (saturingSubtraction imin a))
+        max LanguagePrimitives.GenericZero (max (saturatingSubtraction a imax) (saturatingSubtraction imin a))
 
     let dbarleft = computeDBar l r rn rp
     let dbarright = computeDBar r l ln lp

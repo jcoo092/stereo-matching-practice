@@ -34,17 +34,17 @@ let inline initMessages parameters =
 let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
-    Array.iteri(fun i p -> // each pixel in the image
-        let neighbourMessageSums = Array.zeroCreate maxD
+    Array.iteri (fun i p -> // each pixel in the image
+        let neighbourMessageSums : float32 [] = Array.zeroCreate maxD
         for fp = 0 to maxD do
             for (_, (neighbourCosts : float32 [])) in p do
                 neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
                 // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
                 // It's easier just to include them here
-        for (neighbourIdx, neighbourCosts) in p do // each neighbour of the current pixel
-            let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m1.[neighbourIdx]
+        for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
+            let indexInNeighbour : int = Array.findIndex (fst >> ((=) i)) m1.[neighbourIdx]
             for fq = 0 to maxD do // each disparity label of q
-                let mutable mincost = LanguagePrimitives.GenericZero
+                let mutable mincost : float32 = 0.0f
                 for fp = 0 to maxD do
                     let smoothnessCost = smoothnessCosts.[fp, fq]
                     let previousMessageCost = neighbourMessageSums.[fp] - neighbourCosts.[fp]
@@ -52,7 +52,9 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                     if totalCost < mincost then
                         mincost <- totalCost
 
-            m2.[neighbourIdx].[indexInNeighbour].[fq] <- mincost
+                //m2.[neighbourIdx].[indexInNeighbour].[fq] <- mincost
+                let (_, m2neighbourcosts) = m2.[neighbourIdx].[indexInNeighbour]
+                m2neighbourcosts.[fq] <- mincost
     ) m1
 
 let computeFinalDisparities parameters messages =
