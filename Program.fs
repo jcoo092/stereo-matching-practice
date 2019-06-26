@@ -130,8 +130,6 @@ let main argv =
     let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
                             (determineOutputFilename results)
 
-    //use outFile = new System.IO.FileStream((results.GetResult OutputDirectory) + @"\" + outputFilename, FileMode.OpenOrCreate)
-
     outputImage.Save(outputFilename)
 
     printfn "Saved stereo-matching-result image to %s" outputFilename

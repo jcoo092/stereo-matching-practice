@@ -32,8 +32,6 @@ let inline saturingSubtraction minuend subtrahend =
         minuend - subtrahend
 
 let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
-    //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)
-    //let slicer = if usedImage then parameters.leftImage else parameters.rightImage
     let subjectArray = match usedImage with
                         | Left -> parameters.leftImage
                         | Right -> parameters.rightImage
@@ -52,7 +50,6 @@ let buildArraySlices parameters usedImage =
     Array.chunkBySize parameters.width subjectArray
 
 let buildArraySegments parameters usedImage =
-    //let subjectArray = if useLeftImage then parameters.leftImage else parameters.rightImage
     let subjectArray = match usedImage with
                         | Left -> parameters.leftImage
                         | Right -> parameters.rightImage
