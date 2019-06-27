@@ -52,12 +52,13 @@ let inline btDifference a b =
 
 let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -> byte -> single) =
     let data = Array.zeroCreate (parameters.width * parameters.height)
-    for x = 0 to parameters.width do
-        for y = 0 to parameters.height do
+    for x = 0 to (parameters.width - 1) do
+        for y = 0 to (parameters.height - 1) do
             let leftIdx = x + y * parameters.width
-            let lowerBound = System.Math.Clamp(leftIdx - parameters.maximumDisparity, 0, leftIdx - parameters.maximumDisparity)
-            let currentPixelData = Array.zeroCreate (leftIdx - lowerBound)
-            for d = parameters.maximumDisparity downto lowerBound do
+            let endOfRight = System.Math.Clamp(x - parameters.maximumDisparity, 0, leftIdx)
+            let currentPixelData = Array.zeroCreate (x - endOfRight + 1)
+            //printfn "x = %d, y = %d, leftIdx = %d, lowerBound = %d, length of currentPixelData = %d" x y leftIdx endOfRight (Array.length currentPixelData)
+            for d = (x - endOfRight) downto 0 do
                 currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             data.[leftIdx] <- currentPixelData
     data

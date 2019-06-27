@@ -1,7 +1,7 @@
 module Common
 
 open System
-open FSharp.Span.Utils
+//open FSharp.Span.Utils
 
 type LeftOrRight = | Left | Right
 
@@ -31,17 +31,17 @@ let inline saturatingSubtraction minuend subtrahend =
     else
         minuend - subtrahend
 
-let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
-    let subjectArray = match usedImage with
-                        | Left -> parameters.leftImage
-                        | Right -> parameters.rightImage
-                        |> ReadOnlySpan.ofArray
-    let width = parameters.width
-    let slices = Array.zeroCreate parameters.height
-    for i in 0..(parameters.height - 1) do
-        //slices.[i] <- subjectArray.Slice(i * width, width)
-        slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
-    slices
+// let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
+//     let subjectArray = match usedImage with
+//                         | Left -> parameters.leftImage
+//                         | Right -> parameters.rightImage
+//                         |> ReadOnlySpan.ofArray
+//     let width = parameters.width
+//     let slices = Array.zeroCreate parameters.height
+//     for i in 0..(parameters.height - 1) do
+//         //slices.[i] <- subjectArray.Slice(i * width, width)
+//         slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
+//     slices
 
 let buildArraySlices parameters usedImage =
     let subjectArray = match usedImage with

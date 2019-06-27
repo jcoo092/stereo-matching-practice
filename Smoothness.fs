@@ -33,4 +33,4 @@ let inline truncatedQuadratic lambda d a b =
     (min (Data.squaredDifference a b) d) |> float |> (*) lambda
 
 let inline computeSmoothnessCosts (parameters : Common.Parameters) (smoothnessFunction : int -> int -> single) =
-    Array2D.init parameters.maximumDisparity parameters.maximumDisparity smoothnessFunction
+    Array2D.init (parameters.maximumDisparity + 1) (parameters.maximumDisparity + 1) smoothnessFunction
