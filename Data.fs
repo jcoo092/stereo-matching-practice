@@ -50,6 +50,11 @@ let inline birchfieldTomasi ln l lp rn r rp =
 let inline btDifference a b =
     5
 
+let inline FHTruncatedLinear lambda tau a b =
+    //let absDiff = manualAbsoluteDifference a b
+    //let minim = min absDiff tau
+    lambda * (min (manualAbsoluteDifference a b) tau)
+
 let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -> byte -> single) =
     let data = Array.zeroCreate (parameters.width * parameters.height)
     for x = 0 to (parameters.width - 1) do

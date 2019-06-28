@@ -8,8 +8,8 @@ open System
 
 //[<Struct; IsByRefLike>]
 type BPParameters = {
-    dataFunction: Byte -> Byte -> Single
-    smoothnessFunction: int -> int -> Single
+    dataFunction: Byte -> Byte -> float32
+    smoothnessFunction: int -> int -> float32
     iterations: int
 }
 
