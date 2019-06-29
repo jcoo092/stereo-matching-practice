@@ -7,7 +7,7 @@
 let leftInput = [|
     127uy; 126uy; 123uy; 129uy;
     55uy; 49uy; 53uy; 58uy;
-    48uy; 47uy; 50uy; 52uy;
+    48uy; 47uy; 50uy; 200uy;
 |]
 
 let rightInput = [|
@@ -15,8 +15,6 @@ let rightInput = [|
     53uy; 49uy; 54uy; 57uy;
     48uy; 201uy; 203uy; 199uy;
 |]
-
-//printfn "\nDefined inputs\n"
 
 let matchingParameters : Common.Parameters = {
         leftImage = leftInput
@@ -32,10 +30,8 @@ let matchingParameters : Common.Parameters = {
 let bpparameters : BeliefPropagation.BPParameters = {
     dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
     smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
-    iterations = 4
+    iterations = 2
 }
-
-//printfn "\nMade it past initial declarations\n"
 
 let dataCosts = Data.computeDataCosts matchingParameters bpparameters.dataFunction
 //printfn "%A" dataCosts
@@ -51,5 +47,8 @@ for _i = 1 to bpparameters.iterations do
         messages2 <- temp
 
 printfn "m1:\n%A\n" messages1
-printfn "m2:\n%A\n" messages2
-printfn "%A" (messages1 = messages2)
+// printfn "m2:\n%A\n" messages2
+// printfn "%A" (messages1 = messages2)
+
+let results = BeliefPropagation.computeFinalDisparities matchingParameters dataCosts messages1
+printfn "%A" results

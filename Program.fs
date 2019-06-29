@@ -11,11 +11,16 @@ open SixLabors.ImageSharp.PixelFormats
 open SixLabors.ImageSharp.Processing
 open SixLabors.ImageSharp.Advanced
 
+let timer = System.Diagnostics.Stopwatch()
+
 type MatchingAlgorithms =
     | SAD
     | SSD
     | DynamicProgramming
     | BeliefPropagation
+
+// type MatchingAlgorithmArguments =
+//     | MatchingAlgorithm of MatchingAlgorithms
 
 type CLIArguments =
     | [<Mandatory;AltCommandLine("-l")>]LeftImage of left_image_path:string
@@ -53,7 +58,7 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
     let leftImageExtension = Path.GetExtension leftImageName
     let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
     //leftimagewithoutextension + "_" + algorithmString + leftImageExtension
-    sprintf "%s_%s%s.%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
+    sprintf "%s_%s%s%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
 
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
@@ -79,6 +84,8 @@ let main argv =
     //printfn "Got parse results %A" <| results.GetAllResults()
 
     let imgWidth, imgHeight = results.GetResult LeftImage |> getImageSize
+
+    timer.Start()
 
     let outputImageArray =
         let matchingParameters = {
@@ -119,13 +126,18 @@ let main argv =
             }
 
             let bpparameters : BeliefPropagation.BPParameters = {
-                dataFunction = Data.manualAbsoluteDifference
-                smoothnessFunction = (Smoothness.potts Smoothness.LAMBDA_FH)
-                iterations = 5
+                dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH) //Data.manualAbsoluteDifference
+                smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH) //(Smoothness.potts Smoothness.LAMBDA_FH)
+                iterations = 15
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 
+    timer.Stop()
+    printfn "Stereo matching took %d milliseconds" timer.ElapsedMilliseconds
+
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
+    outputImage.Mutate(fun x -> x.HistogramEqualization() |> ignore)
+    outputImage.Mutate(fun x -> x.Invert() |> ignore)
 
     let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
                             (determineOutputFilename results)

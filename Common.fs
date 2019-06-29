@@ -31,6 +31,15 @@ let inline saturatingSubtraction minuend subtrahend =
     else
         minuend - subtrahend
 
+let float32Equality a b =
+    let difference =
+        if a < b then
+            b - a
+        else
+            a - b
+    difference < Single.Epsilon
+
+
 // let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
 //     let subjectArray = match usedImage with
 //                         | Left -> parameters.leftImage
@@ -58,3 +67,11 @@ let buildArraySegments parameters usedImage =
     for i in 0..(parameters.height - 1) do
         slices.[i] <- ArraySegment(subjectArray, i * width, width)
     slices
+
+let argminArray arr =
+    let min = Array.min arr
+    Array.findIndex ((=) min) arr
+
+let argminFloat32Array arr =
+        let min = Array.min arr
+        Array.findIndex (float32Equality min) arr

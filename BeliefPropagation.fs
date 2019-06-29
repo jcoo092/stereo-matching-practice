@@ -25,16 +25,18 @@ let computeNeighbours parameters i =
     |]
 
 let inline initMessages parameters =
-    Array.init (parameters.width * parameters.height) (
+    Array.Parallel.init (parameters.width * parameters.height) (
         fun i ->
                 let neighbours = computeNeighbours parameters i
                 Array.map (fun neighbour -> (neighbour, Array.zeroCreate (parameters.maximumDisparity + 1))) neighbours
     )
 
+
+// This is intended to match eq. 2 in F & H 2006
 let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
-    Array.iteri (fun i p -> // each pixel in the image
+    Array.Parallel.iteri (fun i p -> // each pixel in the image
         let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
         let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
         //printfn "fpMax = %d" fpMax
@@ -62,8 +64,28 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                 m2neighbourcosts.[fq] <- mincost
     ) m1
 
-let computeFinalDisparities parameters messages =
-    Array.zeroCreate parameters.totalPixels
+let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) =
+    Array.Parallel.mapi (fun i p ->
+        let maxFq = min parameters.maximumDisparity ((Array.length dataCosts.[i]) - 1)
+
+        // Compute belief vector
+        let beliefs = Array.zeroCreate (maxFq + 1)
+        for j = 0 to maxFq do
+            let dataCost = dataCosts.[i].[j]
+            let mutable messageCost = 0.0f
+            for (_, (neighbourArray : float32 [])) in p do
+                messageCost <- messageCost + neighbourArray.[j]
+            beliefs.[j] <- dataCost + messageCost
+
+        // Select disparity value with minimum cost
+        argminFloat32Array beliefs |> byte
+    ) messages
+
+//TODO:  Finish off this function
+let computeEnergy dataCosts smoothnessCosts messages finalDisparities =
+    let dC = Array.Parallel.mapi (fun i p -> dataCosts.[i].[finalDisparities.[i]]) |> Array.sum
+
+    dC + sC
 
 
 
@@ -78,4 +100,6 @@ let beliefpropagation parameters bpparameters =
         messages1 <- messages2
         messages2 <- temp
 
-    computeFinalDisparities parameters messages1
+    let findeps = computeFinalDisparities parameters dataCosts messages1
+    let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
+    printfn "Final energy is: %f" finenergy
