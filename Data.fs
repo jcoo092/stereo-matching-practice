@@ -51,8 +51,6 @@ let inline btDifference a b =
     5
 
 let inline FHTruncatedLinear lambda tau a b =
-    //let absDiff = manualAbsoluteDifference a b
-    //let minim = min absDiff tau
     lambda * (min (manualAbsoluteDifference a b) tau)
 
 let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -> byte -> single) =
@@ -62,7 +60,6 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
             let leftIdx = x + y * parameters.width
             let endOfRight = System.Math.Clamp(x - parameters.maximumDisparity, 0, leftIdx)
             let currentPixelData = Array.zeroCreate (x - endOfRight + 1)
-            //printfn "x = %d, y = %d, leftIdx = %d, lowerBound = %d, length of currentPixelData = %d" x y leftIdx endOfRight (Array.length currentPixelData)
             for d = (x - endOfRight) downto 0 do
                 currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             data.[leftIdx] <- currentPixelData

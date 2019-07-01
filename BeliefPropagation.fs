@@ -39,14 +39,11 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
     Array.Parallel.iteri (fun i p -> // each pixel in the image
         let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
         let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
-        //printfn "fpMax = %d" fpMax
         for fp = 0 to fpMax do
             for (_, (neighbourCosts : float32 [])) in p do
-                //printfn "about to access data costs, at i = %d, fp = %d" i fp
                 neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
                 // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
                 // It's easier just to include them here
-        //printfn "i = %d, finished populating neighbourMessageSums" i
         for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
             let indexInNeighbour : int = Array.findIndex (fst >> ((=) i)) m1.[neighbourIdx]
             for fq = 0 to maxD do // each disparity label of q
@@ -54,12 +51,10 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                 for fp = 0 to fpMax do
                     let smoothnessCost = smoothnessCosts.[fp, fq]
                     let previousMessageCost = neighbourMessageSums.[fp] - neighbourCosts.[fp]
-                    //printfn "i = %d, fq = %d, fp =%d, previousMessageCost was %f" i fq fp previousMessageCost
                     let totalCost = smoothnessCost + previousMessageCost
                     if totalCost < mincost then
                         mincost <- totalCost
 
-                //m2.[neighbourIdx].[indexInNeighbour].[fq] <- mincost
                 let (_, m2neighbourcosts) = m2.[neighbourIdx].[indexInNeighbour]
                 m2neighbourcosts.[fq] <- mincost
     ) m1
@@ -82,7 +77,7 @@ let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (i
     ) messages
 
 let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (messages : (int * float32 []) [] []) (finalDisparities : byte[]) =
-    //let dC = Array.Parallel.mapi (fun i _ -> dataCosts.[i].[finalDisparities.[i]]) |> Array.sum
+    //let dC = Array.Parallel.mapi (fun i _ -> dataCosts.[i].[(finalDisparities.[i] |> int)]) messages |> Array.sum
     let dC = Array.fold (fun acc i ->
                             let finDepI = finalDisparities.[i] |> int
                             acc + dataCosts.[i].[finDepI]

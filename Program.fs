@@ -11,7 +11,7 @@ open SixLabors.ImageSharp.PixelFormats
 open SixLabors.ImageSharp.Processing
 open SixLabors.ImageSharp.Advanced
 
-let timer = System.Diagnostics.Stopwatch()
+let timer = Diagnostics.Stopwatch()
 
 type MatchingAlgorithms =
     | SAD
@@ -57,15 +57,12 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
     let leftimagewithoutextension = Path.GetFileNameWithoutExtension leftImageName
     let leftImageExtension = Path.GetExtension leftImageName
     let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
-    //leftimagewithoutextension + "_" + algorithmString + leftImageExtension
     sprintf "%s_%s%s%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
 
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
     img.Mutate(fun x -> x.Grayscale() |> ignore)
-    //let pspan = img.GetPixelSpan()
     img.GetPixelSpan().ToArray() |> Array.Parallel.map (fun p -> p.R)
-    //img.GetPixelSpan()
 
 let getImageSize (imagePath : string) =
     use img = Image.Load(imagePath)
@@ -80,8 +77,6 @@ let main argv =
     let parser = ArgumentParser.Create<CLIArguments>(programName = "stereo matching runner", errorHandler = errorHandler)
 
     let results = parser.ParseCommandLine argv
-
-    //printfn "Got parse results %A" <| results.GetAllResults()
 
     let imgWidth, imgHeight = results.GetResult LeftImage |> getImageSize
 
@@ -128,7 +123,7 @@ let main argv =
             let bpparameters : BeliefPropagation.BPParameters = {
                 dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH) //Data.manualAbsoluteDifference
                 smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH) //(Smoothness.potts Smoothness.LAMBDA_FH)
-                iterations = 30
+                iterations = 15
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 
@@ -137,7 +132,7 @@ let main argv =
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
     outputImage.Mutate(fun x -> x.HistogramEqualization() |> ignore)
-    outputImage.Mutate(fun x -> x.Invert() |> ignore)
+    //outputImage.Mutate(fun x -> x.Invert() |> ignore)
 
     let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
                             (determineOutputFilename results)
@@ -145,5 +140,4 @@ let main argv =
     outputImage.Save(outputFilename)
 
     printfn "Saved stereo-matching-result image to %s" outputFilename
-    //printfn "Hello World from F#!"
     0 // return an integer exit code
