@@ -128,7 +128,7 @@ let main argv =
             let bpparameters : BeliefPropagation.BPParameters = {
                 dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH) //Data.manualAbsoluteDifference
                 smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH) //(Smoothness.potts Smoothness.LAMBDA_FH)
-                iterations = 15
+                iterations = 30
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 

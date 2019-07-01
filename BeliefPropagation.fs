@@ -81,10 +81,20 @@ let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (i
         argminFloat32Array beliefs |> byte
     ) messages
 
-//TODO:  Finish off this function
-let computeEnergy dataCosts smoothnessCosts messages finalDisparities =
-    let dC = Array.Parallel.mapi (fun i p -> dataCosts.[i].[finalDisparities.[i]]) |> Array.sum
-
+let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (messages : (int * float32 []) [] []) (finalDisparities : byte[]) =
+    //let dC = Array.Parallel.mapi (fun i _ -> dataCosts.[i].[finalDisparities.[i]]) |> Array.sum
+    let dC = Array.fold (fun acc i ->
+                            let finDepI = finalDisparities.[i] |> int
+                            acc + dataCosts.[i].[finDepI]
+                        ) 0.0f [|0..(Array.length finalDisparities) - 1|]
+    let sC = Array.Parallel.mapi (fun i p ->
+                            let fp = finalDisparities.[i] |> int
+                            let mutable totalCost = 0.0f
+                            for (neighbourIdx, _) in p do
+                                let fq = finalDisparities.[neighbourIdx] |> int
+                                totalCost <- totalCost + smoothnessCosts.[fp, fq]
+                            totalCost
+                        ) messages |> Array.sum
     dC + sC
 
 
@@ -103,3 +113,4 @@ let beliefpropagation parameters bpparameters =
     let findeps = computeFinalDisparities parameters dataCosts messages1
     let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
     printfn "Final energy is: %f" finenergy
+    findeps
