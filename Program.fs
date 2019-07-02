@@ -140,4 +140,5 @@ let main argv =
     outputImage.Save(outputFilename)
 
     printfn "Saved stereo-matching-result image to %s" outputFilename
+
     0 // return an integer exit code

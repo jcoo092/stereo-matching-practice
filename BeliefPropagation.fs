@@ -107,5 +107,5 @@ let beliefpropagation parameters bpparameters =
 
     let findeps = computeFinalDisparities parameters dataCosts messages1
     let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
-    printfn "Final energy is: %f" finenergy
+    printfn "Final energy is: %f" (finenergy / float32 parameters.totalPixels)
     findeps
