@@ -130,14 +130,14 @@ let matchingParameters : Common.Parameters = {
         height = 3
         totalPixels = 4 * 3
         windowEdgeSize = 3
-        maximumDisparity = 16
+        maximumDisparity = 4
         zeroMean = true
 }
 
 let bpparameters : BeliefPropagation.BPParameters = {
     dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
     smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
-    iterations = 20
+    iterations = 1
 }
 
 let dataCosts = Data.computeDataCosts matchingParameters bpparameters.dataFunction
@@ -156,7 +156,7 @@ for i = 1 to bpparameters.iterations do
         messages1 <- messages2
         messages2 <- temp
         printfn "\n_____________________ %d ___________________\n" i
-        printfn "%A" messages1
+        printfn "%A" messages1.[5]
 
 // printfn "m1:\n%A\n" messages1
 // printfn "m2:\n%A\n" messages2
