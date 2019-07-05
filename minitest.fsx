@@ -137,7 +137,7 @@ let matchingParameters : Common.Parameters = {
 let bpparameters : BeliefPropagation.BPParameters = {
     dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
     smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
-    iterations = 1
+    iterations = 20
 }
 
 let dataCosts = Data.computeDataCosts matchingParameters bpparameters.dataFunction
