@@ -9,12 +9,6 @@ let C_FH = 1.7f
 [<Literal>]
 let D_FH = 1.7f
 
-// let inline potts lambda a b =
-//     if a = b then
-//         LanguagePrimitives.GenericZero
-//     else
-//         lambda
-
 let inline potts lambda a b =
     if a = b then
         LanguagePrimitives.GenericZero
@@ -22,7 +16,6 @@ let inline potts lambda a b =
         lambda
 
 let inline pottsFloat32 (lambda: float32) (a : float32) b =
-    //if System.Math.Abs(a - b) < System.Single.Epsilon then
     if System.Math.Abs(a - b) < 7.62939453125e-5f then
         0.0f
     else

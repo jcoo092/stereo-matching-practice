@@ -19,9 +19,6 @@ type MatchingAlgorithms =
     | DynamicProgramming
     | BeliefPropagation
 
-// type MatchingAlgorithmArguments =
-//     | MatchingAlgorithm of MatchingAlgorithms
-
 type CLIArguments =
     | [<Mandatory;AltCommandLine("-l")>]LeftImage of left_image_path:string
     | [<Mandatory;AltCommandLine("-r")>]RightImage of right_image_path:string
@@ -121,8 +118,8 @@ let main argv =
             }
 
             let bpparameters : BeliefPropagation.BPParameters = {
-                dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH) //Data.manualAbsoluteDifference
-                smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH) //(Smoothness.potts Smoothness.LAMBDA_FH)
+                dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
+                smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
                 iterations = 80
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
@@ -132,7 +129,6 @@ let main argv =
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
     outputImage.Mutate(fun x -> x.HistogramEqualization() |> ignore)
-    //outputImage.Mutate(fun x -> x.Invert() |> ignore)
 
     let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
                             (determineOutputFilename results)

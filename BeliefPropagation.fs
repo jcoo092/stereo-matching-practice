@@ -39,7 +39,6 @@ let inline initMessages parameters =
     )
 
 let inline normalizeCostArray arr =
-    //let sum = Array.sum arr
     let sum = Array.min arr
     Array.iteri (fun i value -> arr.[i] <- value / sum) arr
 
@@ -93,7 +92,6 @@ let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (i
     ) messages
 
 let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (messages : (int * float32 []) [] []) (finalDisparities : byte[]) =
-    //let dC = Array.Parallel.mapi (fun i _ -> dataCosts.[i].[(finalDisparities.[i] |> int)]) messages |> Array.sum
     let dC = Array.fold (fun acc i ->
                             let finDepI = finalDisparities.[i] |> int
                             acc + dataCosts.[i].[finDepI]

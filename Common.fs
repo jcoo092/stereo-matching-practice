@@ -7,11 +7,7 @@ type LeftOrRight = | Left | Right
 
 //[<Struct; IsByRefLike>]
 type Parameters = {
-    //leftImage: byte []
-    //leftImage: ReadOnlySpan<byte>
     leftImage: byte []
-    //rightImage: byte []
-    //rightImage: ReadOnlySpan<byte>
     rightImage: byte []
     width: int
     height: int
@@ -38,19 +34,6 @@ let float32Equality a b =
         else
             a - b
     difference < Single.Epsilon
-
-
-// let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
-//     let subjectArray = match usedImage with
-//                         | Left -> parameters.leftImage
-//                         | Right -> parameters.rightImage
-//                         |> ReadOnlySpan.ofArray
-//     let width = parameters.width
-//     let slices = Array.zeroCreate parameters.height
-//     for i in 0..(parameters.height - 1) do
-//         //slices.[i] <- subjectArray.Slice(i * width, width)
-//         slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
-//     slices
 
 let buildArraySlices parameters usedImage =
     let subjectArray = match usedImage with
