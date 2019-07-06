@@ -1,60 +1,47 @@
 module Common
 
 open System
-open System.Runtime.CompilerServices
-open FSharp.Span.Utils
+//open FSharp.Span.Utils
 
 type LeftOrRight = | Left | Right
 
-[<Struct; IsByRefLike>]
+//[<Struct; IsByRefLike>]
 type Parameters = {
     leftImage: byte []
-    //leftImage: ReadOnlySpan<byte>
     rightImage: byte []
-    //rightImage: ReadOnlySpan<byte>
     width: int
     height: int
+    totalPixels: int
     windowEdgeSize: int
     maximumDisparity: int
     zeroMean: bool
 }
 
-let inline squaredDifference a b = pown (a - b) 2
-let inline absoluteDifference a b = abs (a - b)
+// Taken from 'Average of Integers', listed at http://aggregate.org/MAGIC/#Average%20of%20Integers accessed on 14 June 2019
+let inline twoParameterMean a b =
+    (a &&& b) + ((a ^^^ b) >>> 1)
 
-let inline arraysSquaredDifference (a: ^a[]) (b: ^a[]) i d =
-    let a' = a.[i]
-    let b' = b.[i - d]
-    squaredDifference a' b'
+let inline saturatingSubtraction minuend subtrahend =
+    if subtrahend > minuend then
+        LanguagePrimitives.GenericZero
+    else
+        minuend - subtrahend
 
-let inline arraysAbsoluteDifference (a: ^a[]) (b: ^a[]) i d =
-    let a' = a.[i]
-    let b' = b.[i - d]
-    absoluteDifference a' b'
+let float32Equality a b =
+    let difference =
+        if a < b then
+            b - a
+        else
+            a - b
+    difference < Single.Epsilon
 
-let inline slicesSquaredDifference (a: ReadOnlySpan<_>) (b: ReadOnlySpan<_>) i d =
-    let a' = a.[i]
-    let b' = b.[i - d]
-    squaredDifference a' b'
-
-let buildSlices parameters usedImage = // leftImage is a boolean, specifying whether the left (true) or right (false) image should be used
-    //let slicer = ReadOnlyMemory(if useLeftImage then parameters.leftImage else parameters.rightImage)
-    //let slicer = if usedImage then parameters.leftImage else parameters.rightImage
+let buildArraySlices parameters usedImage =
     let subjectArray = match usedImage with
                         | Left -> parameters.leftImage
                         | Right -> parameters.rightImage
-                        |> ReadOnlySpan.ofArray
-    let width = parameters.width
-    let slices = Array.zeroCreate parameters.height
-    for i in 0..(parameters.height - 1) do
-        //slices.[i] <- subjectArray.Slice(i * width, width)
-        slices.[i] <- ReadOnlySpan.slice (i * width) width subjectArray
-    slices
-
-
+    Array.chunkBySize parameters.width subjectArray
 
 let buildArraySegments parameters usedImage =
-    //let subjectArray = if useLeftImage then parameters.leftImage else parameters.rightImage
     let subjectArray = match usedImage with
                         | Left -> parameters.leftImage
                         | Right -> parameters.rightImage
@@ -63,3 +50,11 @@ let buildArraySegments parameters usedImage =
     for i in 0..(parameters.height - 1) do
         slices.[i] <- ArraySegment(subjectArray, i * width, width)
     slices
+
+let argminArray arr =
+    let min = Array.min arr
+    Array.findIndex ((=) min) arr
+
+let argminFloat32Array arr =
+        let min = Array.min arr
+        Array.findIndex (float32Equality min) arr

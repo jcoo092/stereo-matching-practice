@@ -11,6 +11,8 @@ open SixLabors.ImageSharp.PixelFormats
 open SixLabors.ImageSharp.Processing
 open SixLabors.ImageSharp.Advanced
 
+let timer = Diagnostics.Stopwatch()
+
 type MatchingAlgorithms =
     | SAD
     | SSD
@@ -52,15 +54,12 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
     let leftimagewithoutextension = Path.GetFileNameWithoutExtension leftImageName
     let leftImageExtension = Path.GetExtension leftImageName
     let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
-    //leftimagewithoutextension + "_" + algorithmString + leftImageExtension
-    sprintf "%s_%s%s.%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
+    sprintf "%s_%s%s%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
 
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
     img.Mutate(fun x -> x.Grayscale() |> ignore)
-    //let pspan = img.GetPixelSpan()
     img.GetPixelSpan().ToArray() |> Array.Parallel.map (fun p -> p.R)
-    //img.GetPixelSpan()
 
 let getImageSize (imagePath : string) =
     use img = Image.Load(imagePath)
@@ -76,9 +75,9 @@ let main argv =
 
     let results = parser.ParseCommandLine argv
 
-    //printfn "Got parse results %A" <| results.GetAllResults()
-
     let imgWidth, imgHeight = results.GetResult LeftImage |> getImageSize
+
+    timer.Start()
 
     let outputImageArray =
         let matchingParameters = {
@@ -86,6 +85,7 @@ let main argv =
             rightImage = results.GetResult RightImage |> openImageAndConvertToGrayscaleArray
             width = imgWidth
             height = imgHeight
+            totalPixels = imgHeight * imgWidth
             windowEdgeSize = results.TryGetResult Window |> Option.defaultValue 3
             maximumDisparity = results.TryGetResult MaximumDisparity |> Option.defaultValue 32
             zeroMean = results.Contains Z
@@ -93,18 +93,48 @@ let main argv =
         match results.GetResult Algorithm with
         | SAD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
         | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
-        | DynamicProgramming -> dynamicProgramming matchingParameters
-        | BeliefPropagation -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
+        | DynamicProgramming ->
+            let updatedMatchingParameters = {
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte //uint32
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte //uint32
+                width = matchingParameters.width
+                height = matchingParameters.height
+                totalPixels = matchingParameters.width * matchingParameters.height
+                windowEdgeSize = matchingParameters.windowEdgeSize
+                maximumDisparity = matchingParameters.maximumDisparity
+                zeroMean = matchingParameters.zeroMean
+            }
+            dynamicProgramming updatedMatchingParameters |> Array.Parallel.map byte
+        | BeliefPropagation ->
+            let updatedMatchingParameters = {
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte
+                width = matchingParameters.width
+                height = matchingParameters.height
+                totalPixels = matchingParameters.width * matchingParameters.height
+                windowEdgeSize = matchingParameters.windowEdgeSize
+                maximumDisparity = matchingParameters.maximumDisparity
+                zeroMean = matchingParameters.zeroMean
+            }
+
+            let bpparameters : BeliefPropagation.BPParameters = {
+                dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
+                smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
+                iterations = 80
+            }
+            BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
+
+    timer.Stop()
+    printfn "Stereo matching took %d milliseconds" timer.ElapsedMilliseconds
 
     let outputImage = Image.LoadPixelData(Array.Parallel.map makeGray8 outputImageArray, imgWidth, imgHeight)
+    outputImage.Mutate(fun x -> x.HistogramEqualization() |> ignore)
 
     let outputFilename = (results.GetResult OutputDirectory) + (string Path.DirectorySeparatorChar) +
                             (determineOutputFilename results)
 
-    //use outFile = new System.IO.FileStream((results.GetResult OutputDirectory) + @"\" + outputFilename, FileMode.OpenOrCreate)
-
     outputImage.Save(outputFilename)
 
     printfn "Saved stereo-matching-result image to %s" outputFilename
-    //printfn "Hello World from F#!"
+
     0 // return an integer exit code

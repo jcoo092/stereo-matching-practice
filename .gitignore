@@ -14,6 +14,9 @@ bin
 *.exe
 !.paket/paket.bootstrapper.exe
 
+### Ionide ###
+.ionide/*
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json
@@ -53,3 +56,4 @@ $RECYCLE.BIN/
 # End of https://www.gitignore.io/api/fsharp,windows,visualstudiocode
 
 Images/*
+messages.txt
