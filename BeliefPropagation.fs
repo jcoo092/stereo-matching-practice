@@ -39,7 +39,8 @@ let inline initMessages parameters =
     )
 
 let inline normalizeCostArray arr =
-    let sum = Array.sum arr
+    //let sum = Array.sum arr
+    let sum = Array.min arr
     Array.iteri (fun i value -> arr.[i] <- value / sum) arr
 
 // This is intended to match eq. 2 in F & H 2006
@@ -47,8 +48,8 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
     Array.Parallel.iteri (fun i p -> // each pixel in the image
-        //let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
-        let fpMax = ((Array.length dataCosts.[i]) - 1)
+        let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
+        // let fpMax = ((Array.length dataCosts.[i]) - 1)
         let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
         for fp = 0 to fpMax do
             for (_, (neighbourCosts : float32 [])) in p do
