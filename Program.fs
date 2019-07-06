@@ -25,6 +25,7 @@ type CLIArguments =
     | [<Mandatory;AltCommandLine("-o")>]OutputDirectory of output_directory:string
     | [<EqualsAssignment;AltCommandLine("-w")>]Window of window_size:int
     | [<EqualsAssignment;AltCommandLine("-d")>]MaximumDisparity of max_disparity:int
+    | [<EqualsAssignment;AltCommandLine("-n")>]NumberOfIterations of num_iterations:int
     | [<Mandatory;AltCommandLine("-a");>]Algorithm of matching_algorithm:MatchingAlgorithms
     | [<CliPrefix(CliPrefix.Dash)>] Z
 with
@@ -38,6 +39,8 @@ Note that you do NOT specify a filename - that will be automatically constructed
             | Window _ -> "Size of the sides of the square window to be used, assuming that the selected algorithm uses windows.
 The total size of the window will thus be n x n, where n is the input size here"
             | MaximumDisparity _ -> "The maximum disparity to search across, assuming that the selected algorithm uses a maximum"
+            | NumberOfIterations _ -> "The number of iterations to do, if the algorithm is one that works on such a basis
+                (currently only Belief Propagation)"
             | Algorithm _ -> "The specific choice of stereo matching algorithm to be used"
             | Z -> "Use the zero-mean version of the algorithm (only applies currently to SAD and SSD)"
 
@@ -120,7 +123,7 @@ let main argv =
             let bpparameters : BeliefPropagation.BPParameters = {
                 dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
                 smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
-                iterations = 80
+                iterations = results.TryGetResult NumberOfIterations |> Option.defaultValue 20
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 

@@ -19,6 +19,18 @@ type Direction =
     | East = 1
     | South = 2
     | West = 3
+    | Data = 4
+
+type Pixel<'a> = {
+    msg : 'a[,]
+    bestDisparity: 'a
+}
+
+// type MRF2D<'a> = {
+//     grid : Pixel<'a>[]
+//     width: int
+//     height: int
+// }
 
 let computeNeighbours parameters i =
     let x = i % parameters.width
@@ -31,11 +43,19 @@ let computeNeighbours parameters i =
         if y < (parameters.height - 1) then yield i + parameters.width;
     |]
 
-let inline initMessages parameters =
+// let inline initMessages parameters =
+//     Array.Parallel.init (parameters.width * parameters.height) (
+//         fun i ->
+//                 let neighbours = computeNeighbours parameters i
+//                 Array.map (fun neighbour -> (neighbour, Array.zeroCreate (parameters.maximumDisparity + 1))) neighbours
+//     )
+
+let initMessages parameters (dataCosts : 'a[][]) =
     Array.Parallel.init (parameters.width * parameters.height) (
         fun i ->
-                let neighbours = computeNeighbours parameters i
-                Array.map (fun neighbour -> (neighbour, Array.zeroCreate (parameters.maximumDisparity + 1))) neighbours
+            let message = Array2D.zeroCreate 5 parameters.maximumDisparity
+            Array.blit dataCosts.[i] 0 message.[int Direction.Data, *] 0 parameters.maximumDisparity
+            message
     )
 
 let inline normalizeCostArray arr =
@@ -106,20 +126,74 @@ let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (mes
                         ) messages |> Array.sum
     dC + sC
 
+let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (messages : Pixel<'a>[]) x y (direction : Direction) =
+    let newMsg = Array.zeroCreate parameters.maximumDisparity
+    let width = parameters.width
+    for i = 0 to (parameters.maximumDisparity - 1) do
+        let mutable minVal = Single.MaxValue
+        for j = 0 to (parameters.maximumDisparity - 1) do
+            let mutable p = 0.0f
+            p <- p + smoothnessCosts.[i, j]
+            p <- p + messages.[x + y * width].msg.[int Direction.Data, j]
 
+            if direction <> Direction.West then
+                p <- messages.[x + y * width].msg.[int Direction.West, j]
+            if direction <> Direction.East then
+                p <- messages.[x + y * width].msg.[int Direction.East, j]
+            if direction <> Direction.North then
+                p <- messages.[x + y * width].msg.[int Direction.North, j]
+            if direction <> Direction.South then
+                p <- messages.[x + y * width].msg.[int Direction.South, j]
+
+            minVal <- min minVal p
+        newMsg.[i] <- minVal
+
+    match direction with
+    | Direction.West ->
+        Array.blit newMsg 0 messages.[y*width + (x - 1)].msg.[int Direction.East, *] 0 parameters.maximumDisparity
+    | Direction.East ->
+        Array.blit newMsg 0 messages.[y*width + (x + 1)].msg.[int Direction.West, *] 0 parameters.maximumDisparity
+    | Direction.North ->
+        Array.blit newMsg 0 messages.[(y - 1)*width + x].msg.[int Direction.South, *] 0 parameters.maximumDisparity
+    | Direction.South ->
+        Array.blit newMsg 0 messages.[(y + 1)*width + x].msg.[int Direction.North, *] 0 parameters.maximumDisparity
+    | _ -> ()
+
+let bp (parameters : Common.Parameters) dataCosts smoothnessCosts messages direction =
+    match direction with
+    | Direction.East ->
+        for y = 0 to (parameters.height - 1) do
+            for x = 0 to (parameters.width - 1) do
+                sendMsg parameters smoothnessCosts messages x y direction
+    | Direction.West ->
+        for y = 0 to (parameters.height - 1) do
+            for x = (parameters.width - 1) downto 0 do
+                sendMsg parameters smoothnessCosts messages x y direction
+    | Direction.South ->
+        for x = 0 to (parameters.width - 1) do
+            for y = 0 to (parameters.height - 1) do
+                sendMsg parameters smoothnessCosts messages x y direction
+    | Direction.North ->
+        for x = 0 to (parameters.width - 1) do
+            for y = (parameters.height - 1) downto 0 do
+                sendMsg parameters smoothnessCosts messages x y direction
+    | _ -> ()
 
 let beliefpropagation parameters bpparameters =
     let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
     let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters.smoothnessFunction
-    let mutable messages1 = initMessages parameters // All messages will be 0 initially
-    let mutable messages2 = initMessages parameters
+    let messages = initMessages parameters dataCosts // All messages will be 0 initially
     for _i = 1 to bpparameters.iterations do
-        updateMessages parameters.maximumDisparity dataCosts smoothnessCosts messages1 messages2
-        let temp = messages1
-        messages1 <- messages2
-        messages2 <- temp
+        // updateMessages parameters.maximumDisparity dataCosts smoothnessCosts messages1 messages2
+        // let temp = messages1
+        // messages1 <- messages2
+        // messages2 <- temp
+        bp parameters dataCosts smoothnessCosts messages Direction.East
+        bp parameters dataCosts smoothnessCosts messages Direction.West
+        bp parameters dataCosts smoothnessCosts messages Direction.North
+        bp parameters dataCosts smoothnessCosts messages Direction.South
 
-    let findeps = computeFinalDisparities parameters dataCosts messages1
+    let findeps = computeFinalDisparities parameters dataCosts messages
     //let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
     // printfn "Final energy is: %f" (finenergy / float32 parameters.totalPixels)
     findeps
