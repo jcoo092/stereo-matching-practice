@@ -57,7 +57,8 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
     let leftimagewithoutextension = Path.GetFileNameWithoutExtension leftImageName
     let leftImageExtension = Path.GetExtension leftImageName
     let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
-    sprintf "%s_%s%s%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
+    let iterations = if results.Contains NumberOfIterations then "_" + (results.GetResult NumberOfIterations |> string) else String.Empty
+    sprintf "%s_%s%s%s%s" leftimagewithoutextension algorithmString windowSize iterations leftImageExtension
 
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
