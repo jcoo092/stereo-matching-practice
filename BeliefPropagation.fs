@@ -28,7 +28,7 @@ type Pixel<'a> = {
 let initMessages parameters (dataCosts : float32[][]) =
     Array.Parallel.init (parameters.width * parameters.height) (
         fun i ->
-            let message = Array2D.create 5 parameters.maximumDisparity 0.0f
+            let message = Array2D.zeroCreate 5 parameters.maximumDisparity
             for j = 0 to (parameters.maximumDisparity - 1) do
                 message.[int Direction.Data, j] <- dataCosts.[i].[j]
             {msg = message; bestDisparity = 0}
@@ -51,7 +51,6 @@ let MAP parameters (smoothnessCosts : float32[,]) (pixels : Pixel<float32>[]) =
 
     for y = 0 to (height - 1) do
         for x = 0 to (width - 1) do
-            //let currentPixel = pixels.[x + y * width]
             let currentBest = pixels.[x + y * width].bestDisparity
             energy <- energy + pixels.[x + y * width].msg.[int Direction.Data, currentBest]
 
@@ -68,7 +67,7 @@ let MAP parameters (smoothnessCosts : float32[,]) (pixels : Pixel<float32>[]) =
 
 
 let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (messages : Pixel<float32>[]) x y (direction : Direction) =
-    let newMsg = Array2D.create 1 parameters.maximumDisparity 0.0f
+    let newMsg = Array2D.zeroCreate 1 parameters.maximumDisparity
     let width = parameters.width
     for i = 0 to (parameters.maximumDisparity - 1) do
         let mutable minVal = Single.MaxValue

@@ -54,7 +54,7 @@ let inline FHTruncatedLinear lambda tau a b =
     lambda * (min (manualAbsoluteDifference a b) tau)
 
 let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -> byte -> single) =
-    let zeros = Array.create parameters.maximumDisparity 0.0f
+    let zeros = Array.zeroCreate parameters.maximumDisparity
     let data = Array.create (parameters.width * parameters.height) zeros
     let border = parameters.maximumDisparity
     for x = border to (parameters.width - border - 1) do
