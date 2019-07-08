@@ -54,7 +54,6 @@ let inline FHTruncatedLinear lambda tau a b =
     lambda * (min (manualAbsoluteDifference a b) tau)
 
 let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -> byte -> single) =
-    // let data = Array.zeroCreate (parameters.width * parameters.height)
     let zeros = Array.create parameters.maximumDisparity 0.0f
     let data = Array.create (parameters.width * parameters.height) zeros
     let border = parameters.maximumDisparity
@@ -64,5 +63,4 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
             for d = 0 to (parameters.maximumDisparity - 1) do
                 currentPixelData.[d] <- dataCostFunction parameters.leftImage.[x + y * parameters.width] parameters.rightImage.[(x + y * parameters.width) - d]
             data.[x + y * parameters.width] <- currentPixelData
-    //printfn "data: %A" data
     data
