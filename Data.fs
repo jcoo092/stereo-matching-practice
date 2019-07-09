@@ -29,7 +29,7 @@ let inline slicesSquaredDifference (a: ReadOnlyMemory< ^a >) (b: ReadOnlyMemory<
     let b' = b.Span.[i - d]
     squaredDifference a' b'
 
-// This function is directly lifted from A Pixel Dissimilarity Measure That Is Insensitive to Image Sampling (1998) by Birchfield & Tomasi
+// This function is directly lifted from "A Pixel Dissimilarity Measure That Is Insensitive to Image Sampling" (1998) by Birchfield & Tomasi
 // Interestingly, in their notation they seem to operate on the basis of a functional representation of the image
 // That is, they have a function that takes a given coordinate, and returns the corresponding intensity
 // For the below, ln is the I^-_L and lp is the I^+_L, while l is I_L(x_L), and much the same for the right image values
@@ -57,10 +57,27 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
     let zeros = Array.zeroCreate parameters.maximumDisparity
     let data = Array.create (parameters.width * parameters.height) zeros
     let border = parameters.maximumDisparity
-    for x = border to (parameters.width - border - 1) do
-        for y = border to (parameters.height - border - 1) do
+    for y = border to (parameters.height - border - 1) do
+        for x = border to (parameters.width - border - 1) do
             let currentPixelData = Array.zeroCreate parameters.maximumDisparity
             for d = 0 to (parameters.maximumDisparity - 1) do
                 currentPixelData.[d] <- dataCostFunction parameters.leftImage.[x + y * parameters.width] parameters.rightImage.[(x + y * parameters.width) - d]
             data.[x + y * parameters.width] <- currentPixelData
+    data
+
+let computeBTDataCosts parameters =
+    let zeros = Array.zeroCreate parameters.maximumDisparity
+    let data = Array.create (parameters.width * parameters.height) zeros
+    let border = parameters.maximumDisparity
+    for y = border to (parameters.height - border - 1) do
+        let yoffset = y * parameters.width
+        for x = border to (parameters.width - border - 1) do
+            let xyoffset = x + yoffset
+            let currentPixelData = Array.zeroCreate parameters.maximumDisparity
+            for d = 0 to (parameters.maximumDisparity - 1) do
+                currentPixelData.[d] <-
+                    birchfieldTomasi parameters.leftImage.[xyoffset - 1] parameters.leftImage.[xyoffset] parameters.leftImage.[xyoffset + 1]
+                        parameters.rightImage.[(xyoffset - 1) - d] parameters.rightImage.[xyoffset - d] parameters.rightImage.[(xyoffset + 1) - d]
+                        |> float32
+            data.[xyoffset] <- currentPixelData
     data

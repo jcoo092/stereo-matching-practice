@@ -38,7 +38,7 @@ let MAP parameters (smoothnessCosts : float32[,]) (pixels : Pixel<float32>[]) =
     let width = parameters.width
     let height = parameters.height
     Array.Parallel.iteri
-        (fun i (x : Pixel<float32>) ->
+        (fun _i (x : Pixel<float32>) ->
             let mutable best = Single.MaxValue
             for j = 0 to (parameters.maximumDisparity - 1) do
                 let cost = Array.sum x.msg.[*,j]
@@ -69,19 +69,20 @@ let MAP parameters (smoothnessCosts : float32[,]) (pixels : Pixel<float32>[]) =
 let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (messages : Pixel<float32>[]) x y (direction : Direction) =
     let newMsg = Array2D.zeroCreate 1 parameters.maximumDisparity
     let width = parameters.width
+    let xyoffset = x + y * width
     for i = 0 to (parameters.maximumDisparity - 1) do
         let mutable minVal = Single.MaxValue
         for j = 0 to (parameters.maximumDisparity - 1) do
-            let mutable p = smoothnessCosts.[i, j] + messages.[x + y * width].msg.[int Direction.Data, j]
+            let mutable p = smoothnessCosts.[i, j] + messages.[xyoffset].msg.[int Direction.Data, j]
 
             if direction <> Direction.West then
-                p <- p + messages.[x + y * width].msg.[int Direction.West, j]
+                p <- p + messages.[xyoffset].msg.[int Direction.West, j]
             if direction <> Direction.East then
-                p <- p + messages.[x + y * width].msg.[int Direction.East, j]
+                p <- p + messages.[xyoffset].msg.[int Direction.East, j]
             if direction <> Direction.North then
-                p <- p + messages.[x + y * width].msg.[int Direction.North, j]
+                p <- p + messages.[xyoffset].msg.[int Direction.North, j]
             if direction <> Direction.South then
-                p <- p + messages.[x + y * width].msg.[int Direction.South, j]
+                p <- p + messages.[xyoffset].msg.[int Direction.South, j]
 
             minVal <- min minVal p
 
@@ -89,11 +90,16 @@ let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (mes
 
     let minVal =
         let mini = Array.min newMsg.[0,*]
-        if mini < 1.0f then
-            1.0f
+        if mini < 0.5f then
+            0.5f
         else
             mini
     Array2D.iteri (fun i j x -> newMsg.[i,j] <- x / minVal) newMsg
+    // let minVal = Array.min newMsg.[0,*]
+    // if minVal < 0.1f then
+    //     Array2D.iteri (fun i j x -> newMsg.[i,j] <- (x * 10.0f) / (minVal * 10.0f)) newMsg
+    // else
+    //     Array2D.iteri (fun i j x -> newMsg.[i,j] <- x / minVal) newMsg
 
     match direction with
     | Direction.West ->
@@ -129,6 +135,7 @@ let bp (parameters : Common.Parameters) smoothnessCosts messages direction =
 
 let beliefpropagation parameters bpparameters =
     let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
+    //let dataCosts = Data.computeBTDataCosts parameters
     let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters.smoothnessFunction
     let messages = initMessages parameters dataCosts // All messages will be 0 initially
     for i = 1 to bpparameters.iterations do
