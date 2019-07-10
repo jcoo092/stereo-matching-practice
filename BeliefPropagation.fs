@@ -6,23 +6,19 @@ module BeliefPropagation
 open Common
 open System
 
-//[<Struct; IsByRefLike>]
+[<Struct; Runtime.CompilerServices.IsByRefLike>]
 type BPParameters = {
     dataFunction: Byte -> Byte -> float32
     smoothnessFunction: int -> int -> float32
     iterations: int
 }
 
-[<Struct>]
-type Direction =
-    | North = 0
-    | East = 1
-    | South = 2
-    | West = 3
-
 let computeNeighbours parameters i =
     let x = i % parameters.width
     let y = i / parameters.width
+
+    // let mutable x = 0
+    // let y = Math.DivRem(i, parameters.width, &x)
 
     [|
         if y > 0 then yield i - parameters.width;
@@ -32,21 +28,29 @@ let computeNeighbours parameters i =
     |]
 
 let inline initMessages parameters =
-    Array.Parallel.init (parameters.width * parameters.height) (
+    //Array.Parallel.init (parameters.width * parameters.height) (
+    Array.init (parameters.width * parameters.height) (
         fun i ->
                 let neighbours = computeNeighbours parameters i
                 Array.map (fun neighbour -> (neighbour, Array.zeroCreate (parameters.maximumDisparity + 1))) neighbours
     )
 
 let inline normalizeCostArray arr =
-    let sum = Array.min arr
-    Array.iteri (fun i value -> arr.[i] <- value / sum) arr
+    // let mini =
+    //     let minVal = Array.min arr
+    //     if minVal < 0.5f then
+    //         0.5f
+    //     else
+    //         minVal
+    let mini = Array.min arr
+    Array.iteri (fun i value -> arr.[i] <- value / mini) arr
 
 // This is intended to match eq. 2 in F & H 2006
 let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
-    Array.Parallel.iteri (fun i p -> // each pixel in the image
+    //Array.Parallel.iteri (fun i p -> // each pixel in the image
+    Array.iteri (fun i p -> // each pixel in the image
         let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
         // let fpMax = ((Array.length dataCosts.[i]) - 1)
         let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
@@ -70,12 +74,14 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
 
                 m2neighbourcosts.[fq] <- mincost
     ) m1
-    Array.Parallel.iter (fun p ->
+    //Array.Parallel.iter (fun p ->
+    Array.iter (fun p ->
                         Array.iter (fun (_, neighbourCosts) -> normalizeCostArray neighbourCosts) p
     ) m2
 
 let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) =
-    Array.Parallel.mapi (fun i p ->
+    //Array.Parallel.mapi (fun i p ->
+    Array.mapi (fun i p ->
         let maxFq = min parameters.maximumDisparity ((Array.length dataCosts.[i]) - 1)
 
         // Compute belief vector
@@ -96,7 +102,8 @@ let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (mes
                             let finDepI = finalDisparities.[i] |> int
                             acc + dataCosts.[i].[finDepI]
                         ) 0.0f [|0..(Array.length finalDisparities) - 1|]
-    let sC = Array.Parallel.mapi (fun i p ->
+    //let sC = Array.Parallel.mapi (fun i p ->
+    let sC = Array.mapi (fun i p ->
                             let fp = finalDisparities.[i] |> int
                             let mutable totalCost = 0.0f
                             for (neighbourIdx, _) in p do

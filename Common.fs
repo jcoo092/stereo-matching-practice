@@ -5,7 +5,7 @@ open System
 
 type LeftOrRight = | Left | Right
 
-//[<Struct; IsByRefLike>]
+[<Struct;>]
 type Parameters = {
     leftImage: byte []
     rightImage: byte []

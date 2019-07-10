@@ -8,6 +8,8 @@ let TAU_FH = 15.0f
 let C_FH = 1.7f
 [<Literal>]
 let D_FH = 1.7f
+[<Literal>]
+let EPSILON_JAMES = 7.62939453125e-5f // Very small value, equivalent to 1e-17 (if I remember rightly)
 
 let inline potts lambda a b =
     if a = b then
@@ -16,7 +18,7 @@ let inline potts lambda a b =
         lambda
 
 let inline pottsFloat32 (lambda: float32) (a : float32) b =
-    if System.Math.Abs(a - b) < 7.62939453125e-5f then
+    if System.Math.Abs(a - b) < EPSILON_JAMES then
         0.0f
     else
         lambda

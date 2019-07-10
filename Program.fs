@@ -26,6 +26,7 @@ type CLIArguments =
     | [<EqualsAssignment;AltCommandLine("-w")>]Window of window_size:int
     | [<EqualsAssignment;AltCommandLine("-d")>]MaximumDisparity of max_disparity:int
     | [<Mandatory;AltCommandLine("-a");>]Algorithm of matching_algorithm:MatchingAlgorithms
+    | [<Mandatory;AltCommandLine("-n");>]NumberOfIterations of number_of_iterations:int
     | [<CliPrefix(CliPrefix.Dash)>] Z
 with
     interface IArgParserTemplate with
@@ -39,6 +40,7 @@ Note that you do NOT specify a filename - that will be automatically constructed
 The total size of the window will thus be n x n, where n is the input size here"
             | MaximumDisparity _ -> "The maximum disparity to search across, assuming that the selected algorithm uses a maximum"
             | Algorithm _ -> "The specific choice of stereo matching algorithm to be used"
+            | NumberOfIterations _ -> "The number of iterations of the algorithm to perform (currently only applicable to Belief Propagation)"
             | Z -> "Use the zero-mean version of the algorithm (only applies currently to SAD and SSD)"
 
 let getAlgorithmString =
@@ -54,7 +56,8 @@ let determineOutputFilename (results : ParseResults<CLIArguments>) =
     let leftimagewithoutextension = Path.GetFileNameWithoutExtension leftImageName
     let leftImageExtension = Path.GetExtension leftImageName
     let windowSize = if results.Contains Window then "_" + (results.GetResult Window |> string) else String.Empty
-    sprintf "%s_%s%s%s" leftimagewithoutextension algorithmString windowSize leftImageExtension
+    let numberOfIterations = if results.Contains NumberOfIterations then "_" + (results.GetResult NumberOfIterations |> string) else String.Empty
+    sprintf "%s_%s%s%s%s" leftimagewithoutextension algorithmString windowSize numberOfIterations leftImageExtension
 
 let openImageAndConvertToGrayscaleArray (imagePath : string) =
     use img = Image.Load(imagePath)
@@ -120,7 +123,7 @@ let main argv =
             let bpparameters : BeliefPropagation.BPParameters = {
                 dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
                 smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
-                iterations = 80
+                iterations = results.TryGetResult NumberOfIterations |> Option.defaultValue 3
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
 
