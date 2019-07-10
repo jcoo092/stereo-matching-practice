@@ -29,8 +29,10 @@ let initMessages parameters (dataCosts : float32[][]) =
     Array.Parallel.init (parameters.width * parameters.height) (
         fun i ->
             let message = Array2D.zeroCreate 5 parameters.maximumDisparity
-            for j = 0 to (parameters.maximumDisparity - 1) do
-                message.[int Direction.Data, j] <- dataCosts.[i].[j]
+            // for j = 0 to (parameters.maximumDisparity - 1) do
+            //     message.[int Direction.Data, j] <- dataCosts.[i].[j]
+            Buffer.BlockCopy(dataCosts.[i], 0, message, sizeof<float32> * 4 * parameters.maximumDisparity,
+                 sizeof<float32> * parameters.maximumDisparity)
             {msg = message; bestDisparity = 0}
     )
 
@@ -67,7 +69,8 @@ let MAP parameters (smoothnessCosts : float32[,]) (pixels : Pixel<float32>[]) =
 
 
 let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (messages : Pixel<float32>[]) x y (direction : Direction) =
-    let newMsg = Array2D.zeroCreate 1 parameters.maximumDisparity
+    // let newMsg = Array2D.zeroCreate 1 parameters.maximumDisparity
+    let newMsg = Array.zeroCreate parameters.maximumDisparity
     let width = parameters.width
     let xyoffset = x + y * width
     for i = 0 to (parameters.maximumDisparity - 1) do
@@ -86,15 +89,18 @@ let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (mes
 
             minVal <- min minVal p
 
-        newMsg.[0,i] <- minVal
+        //newMsg.[0,i] <- minVal
+        newMsg.[i] <- minVal
 
     let minVal =
-        let mini = Array.min newMsg.[0,*]
+        //let mini = Array.min newMsg.[0,*]
+        let mini = Array.min newMsg
         if mini < 0.5f then
             0.5f
         else
             mini
-    Array2D.iteri (fun i j x -> newMsg.[i,j] <- x / minVal) newMsg
+    //Array2D.iteri (fun i j x -> newMsg.[i,j] <- x / minVal) newMsg
+    Array.iteri (fun i x -> newMsg.[i] <- x / minVal) newMsg
     // let minVal = Array.min newMsg.[0,*]
     // if minVal < 0.1f then
     //     Array2D.iteri (fun i j x -> newMsg.[i,j] <- (x * 10.0f) / (minVal * 10.0f)) newMsg
@@ -103,13 +109,21 @@ let sendMsg (parameters : Common.Parameters) (smoothnessCosts : float32[,]) (mes
 
     match direction with
     | Direction.West ->
-        Array2D.blit newMsg 0 0 messages.[y*width + (x - 1)].msg (int Direction.East) 0 1 parameters.maximumDisparity
+        //Array2D.blit newMsg 0 0 messages.[y*width + (x - 1)].msg (int Direction.East) 0 1 parameters.maximumDisparity
+        Buffer.BlockCopy(newMsg, 0, messages.[y*width + (x - 1)].msg,
+            ((int Direction.East) * sizeof<float32> * parameters.maximumDisparity), sizeof<float32> * parameters.maximumDisparity)
     | Direction.East ->
-        Array2D.blit newMsg 0 0 messages.[y*width + (x + 1)].msg (int Direction.West) 0 1 parameters.maximumDisparity
+        // Array2D.blit newMsg 0 0 messages.[y*width + (x + 1)].msg (int Direction.West) 0 1 parameters.maximumDisparity
+        Buffer.BlockCopy(newMsg, 0, messages.[y*width + (x + 1)].msg,
+            ((int Direction.West) * sizeof<float32> * parameters.maximumDisparity), sizeof<float32> * parameters.maximumDisparity)
     | Direction.North ->
-        Array2D.blit newMsg 0 0 messages.[(y - 1)*width + x].msg (int Direction.South) 0 1 parameters.maximumDisparity
+        //Array2D.blit newMsg 0 0 messages.[(y - 1)*width + x].msg (int Direction.South) 0 1 parameters.maximumDisparity
+        Buffer.BlockCopy(newMsg, 0, messages.[(y - 1)*width + x].msg,
+            ((int Direction.South) * sizeof<float32> * parameters.maximumDisparity), sizeof<float32> * parameters.maximumDisparity)
     | Direction.South ->
-        Array2D.blit newMsg 0 0 messages.[(y + 1)*width + x].msg (int Direction.North) 0 1 parameters.maximumDisparity
+        // Array2D.blit newMsg 0 0 messages.[(y + 1)*width + x].msg (int Direction.North) 0 1 parameters.maximumDisparity
+        Buffer.BlockCopy(newMsg, 0, messages.[(y + 1)*width + x].msg,
+            ((int Direction.North) * sizeof<float32> * parameters.maximumDisparity), sizeof<float32> * parameters.maximumDisparity)
     | _ -> ()
 
 let bp (parameters : Common.Parameters) smoothnessCosts messages direction =
