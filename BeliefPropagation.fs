@@ -36,21 +36,25 @@ let inline initMessages parameters =
     )
 
 let inline normalizeCostArray arr =
-    // let mini =
-    //     let minVal = Array.min arr
-    //     if minVal < 0.5f then
-    //         0.5f
-    //     else
-    //         minVal
-    let mini = Array.min arr
+    let mini =
+        let minVal = Array.min arr
+        if minVal < 0.5f then
+            0.5f
+        else
+            minVal
+    //let mini = Array.min arr
     Array.iteri (fun i value -> arr.[i] <- value / mini) arr
 
 // This is intended to match eq. 2 in F & H 2006
-let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
+//let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
+let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) oddOrEven (m : (int * float32 []) [] []) =
 // this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
+    let startIndex = if oddOrEven then 0 else 1
     //Array.Parallel.iteri (fun i p -> // each pixel in the image
-    Array.iteri (fun i p -> // each pixel in the image
+    for i in startIndex..2..((Array.length m) - 1) do
+        let p = m.[i]
+    //Array.iteri (fun i p -> // each pixel in the image
         let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
         // let fpMax = ((Array.length dataCosts.[i]) - 1)
         let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
@@ -60,8 +64,8 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                 // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
                 // It's easier just to include them here
         for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
-            let indexInNeighbour : int = Array.findIndex (fst >> ((=) i)) m1.[neighbourIdx]
-            let (_, m2neighbourcosts) = m2.[neighbourIdx].[indexInNeighbour]
+            let indexInNeighbour : int = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
+            let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
             for fq = 0 to maxD do // each disparity label of q
                 let mutable mincost = Single.MaxValue
                 for fp = 0 to fpMax do
@@ -72,12 +76,17 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                         mincost <- totalCost
 
 
-                m2neighbourcosts.[fq] <- mincost
-    ) m1
+                mneighbourcosts.[fq] <- mincost
+
+        // Using F&H's 'min convolution' style, where the message from p to q is computed as
+        // min_{f_p} (V(f_p - f_q) + h(f_p)), where h(f_p) is
+        // D_p(f_p) + the sum of the messages for f_p received from the other neighbours at t-1
+
+    //) m
     //Array.Parallel.iter (fun p ->
     Array.iter (fun p ->
                         Array.iter (fun (_, neighbourCosts) -> normalizeCostArray neighbourCosts) p
-    ) m2
+    ) m
 
 let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) =
     //Array.Parallel.mapi (fun i p ->
@@ -118,15 +127,19 @@ let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (mes
 let beliefpropagation parameters bpparameters =
     let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
     let smoothnessCosts = Smoothness.computeSmoothnessCosts parameters bpparameters.smoothnessFunction
-    let mutable messages1 = initMessages parameters // All messages will be 0 initially
-    let mutable messages2 = initMessages parameters
+    let messages = initMessages parameters
+    //let mutable messages1 = initMessages parameters // All messages will be 0 initially
+    //let mutable messages2 = initMessages parameters
+    let mutable indexIsEven = false
     for _i = 1 to bpparameters.iterations do
-        updateMessages parameters.maximumDisparity dataCosts smoothnessCosts messages1 messages2
-        let temp = messages1
-        messages1 <- messages2
-        messages2 <- temp
+        updateMessages parameters.maximumDisparity dataCosts smoothnessCosts indexIsEven messages
+        // let temp = messages1
+        // messages1 <- messages2
+        // messages2 <- temp
+        indexIsEven <- not indexIsEven
 
-    let findeps = computeFinalDisparities parameters dataCosts messages1
+    //let findeps = computeFinalDisparities parameters dataCosts messages1
+    let findeps = computeFinalDisparities parameters dataCosts messages
     //let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
     // printfn "Final energy is: %f" (finenergy / float32 parameters.totalPixels)
     findeps
