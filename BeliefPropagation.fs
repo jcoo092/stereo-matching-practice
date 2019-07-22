@@ -36,14 +36,16 @@ let inline initMessages parameters =
     )
 
 let inline normalizeCostArray arr =
-    let mini =
-        let minVal = Array.min arr
-        if minVal < 0.5f then
-            0.5f
-        else
-            minVal
-    //let mini = Array.min arr
-    Array.iteri (fun i value -> arr.[i] <- value / mini) arr
+    // let mini =
+    //     let minVal = Array.min arr
+    //     if minVal < 0.5f then
+    //         0.5f
+    //     else
+    //         minVal
+    // //let mini = Array.min arr
+    // Array.iteri (fun i value -> arr.[i] <- value / mini) arr
+    let normalizer = (Array.sum arr) / (Array.length arr |> float32)
+    Array.iteri (fun i value -> arr.[i] <- value - normalizer) arr
 
 // This is intended to match eq. 2 in F & H 2006
 //let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
