@@ -5,6 +5,29 @@ module BeliefPropagation
 
 open Common
 open System
+open MathNet.Numerics.LinearAlgebra
+
+let standardNeighboursMatrix =
+    matrix [|
+        [|0.0f; 1.0f; 1.0f; 1.0f; 1.0f;|];
+        [|1.0f; 0.0f; 1.0f; 1.0f; 1.0f;|];
+        [|1.0f; 1.0f; 0.0f; 1.0f; 1.0f;|];
+        [|1.0f; 1.0f; 1.0f; 0.0f; 1.0f;|];
+    |]
+
+[<Struct; Runtime.CompilerServices.IsByRefLike>]
+type Proxel = {
+    neighbourIndices: int []
+    costMatrix: Matrix<float32>
+    neighboursMatrix: Matrix<float32>
+}
+
+//[<Struct; Runtime.CompilerServices.IsByRefLike>]
+type OptionProxel = {
+    neighbourIndices: int ValueOption []
+    costMatrix: Matrix<float32>
+    neighboursMatrix: Matrix<float32>
+}
 
 [<Struct; Runtime.CompilerServices.IsByRefLike>]
 type BPParameters = {
@@ -27,6 +50,22 @@ let computeNeighbours parameters i =
         if y < (parameters.height - 1) then yield i + parameters.width;
     |]
 
+let computeOptionNeighbours parameters i =
+        let x = i % parameters.width
+        let y = i / parameters.width
+
+        // let mutable x = 0
+        // let y = Math.DivRem(i, parameters.width, &x)
+
+        let retArr = Array.create 4 ValueNone
+
+        if y > 0 then retArr.[0] <- ValueSome(i - parameters.width)
+        if x > 0 then retArr.[1] <- ValueSome(i - 1)
+        if x < (parameters.width - 1) then retArr.[2] <- ValueSome(i + 1)
+        if y < (parameters.height - 1) then retArr.[3] <- ValueSome(i + parameters.width)
+
+        retArr
+
 let inline initMessages parameters =
     //Array.Parallel.init (parameters.width * parameters.height) (
     Array.init (parameters.width * parameters.height) (
@@ -34,6 +73,35 @@ let inline initMessages parameters =
                 let neighbours = computeNeighbours parameters i
                 Array.map (fun neighbour -> (neighbour, Array.zeroCreate (parameters.maximumDisparity + 1))) neighbours
     )
+
+let initOptionProxel parameters (dataCosts : float32 [][]) i =
+    let neighbourOptionIndices = computeOptionNeighbours parameters i
+    let neighboursMatrix =
+        if Array.forall (ValueOption.isSome) neighbourOptionIndices then
+            standardNeighboursMatrix
+        else
+            let nM = standardNeighboursMatrix.Clone()
+            Array.iteri (
+                fun i x ->
+                    if ValueOption.isNone x then
+                        nM.ClearColumn i
+            ) neighbourOptionIndices
+            nM
+
+    let costMatrix = DenseMatrix.create 5 parameters.maximumDisparity Matrix.One
+    costMatrix.SetRow(4, dataCosts.[i])
+
+    {
+        neighbourIndices = neighbourOptionIndices
+        costMatrix = costMatrix
+        neighboursMatrix = neighboursMatrix
+    }
+
+let inline initOptionProxels parameters dataCosts = Array.init (parameters.width * parameters.height - 1) (initOptionProxel parameters dataCosts)
+
+let inline computeNewMessages proxel =
+    let outgoingMessages = proxel.neighboursMatrix.Multiply(proxel.costMatrix)
+    // do stuff that takes the smoothness costs into account...
 
 let inline normalizeCostArray arr =
     // let mini =
