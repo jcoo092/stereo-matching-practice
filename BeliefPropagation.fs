@@ -25,8 +25,8 @@ type Proxel = {
 //[<Struct; Runtime.CompilerServices.IsByRefLike>]
 type OptionProxel = {
     neighbourIndices: int ValueOption []
-    costMatrix: Matrix<float32>
-    neighboursMatrix: Matrix<float32>
+    costMatrix: Matrix<float32>  // Matrix that the costs for the messages are stored in
+    neighboursMatrix: Matrix<float32>  // Matrix specifying the coefficients to apply to the various costs in the costMatrix
 }
 
 [<Struct; Runtime.CompilerServices.IsByRefLike>]
@@ -99,9 +99,26 @@ let initOptionProxel parameters (dataCosts : float32 [][]) i =
 
 let inline initOptionProxels parameters dataCosts = Array.init (parameters.width * parameters.height - 1) (initOptionProxel parameters dataCosts)
 
+let computeIndexInNeighbour neighbourIndexArrayPosition =
+    match neighbourIndexArrayPosition with
+    | 0 -> 2 // Neighbour is to the North
+    | 1 -> 3 // Neighbour is to the East
+    | 2 -> 0 // Neighbour is to the South
+    | 3 -> 1 // Neighbour is to the West
+    | x -> failwith "Invalid neighbourIndexArrayPosition: %d" x
+
 let inline computeNewMessages proxel =
     let outgoingMessages = proxel.neighboursMatrix.Multiply(proxel.costMatrix)
     // do stuff that takes the smoothness costs into account...
+
+    Array.iter (
+        fun neighbourIndexOption ->
+            match neighbourIndexOption with
+            | ValueSome(neighbourIndex) ->
+                let costsWithoutSmoothness = outgoingMessages.AsRowArrays().[neighbourIndex]
+
+            | ValueNone -> ()
+        ) proxel.neighbourIndices
 
 let inline normalizeCostArray arr =
     // let mini =
