@@ -99,14 +99,6 @@ let initOptionProxel parameters (dataCosts : float32 [][]) i =
 
 let inline initOptionProxels parameters dataCosts = Array.init (parameters.width * parameters.height - 1) (initOptionProxel parameters dataCosts)
 
-// let computeIndexInNeighbour neighbourIndexArrayPosition =
-//     match neighbourIndexArrayPosition with
-//     | 0 -> 2 // Neighbour is to the North
-//     | 1 -> 3 // Neighbour is to the East
-//     | 2 -> 0 // Neighbour is to the South
-//     | 3 -> 1 // Neighbour is to the West
-//     | x -> failwith "Invalid neighbourIndexArrayPosition: %d" x
-
 let computeIndexInNeighbour =
     function
     | 0 -> 2 // Neighbour is to the North
@@ -119,28 +111,48 @@ let inline normalizeCostArray arr =
     let mini = Array.min arr
     Array.iteri (fun i value -> arr.[i] <- value / mini) arr
 
-let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxel =
+let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxelIndex proxel =
     let outgoingMessages = proxel.neighboursMatrix.Multiply(proxel.costMatrix)
 
-    Array.iteri (
-        fun i v ->
-        match v with
-        | ValueSome(neighbourIndex) ->
-            let costsWithoutSmoothness = outgoingMessages.AsRowArrays().[neighbourIndex]
-            printfn "got past the declaration of costwithoutsmoothness!"
-            let scratchSpaceArray = Array.zeroCreate parameters.maximumDisparity
-            let finalCosts = Array.init parameters.maximumDisparity
-                                (fun j ->
-                                Array.iteri (
-                                    fun k _ ->
-                                    scratchSpaceArray.[k] <- costsWithoutSmoothness.[k] + smoothnessCosts.[j,k]
-                                ) scratchSpaceArray
-                                Array.min scratchSpaceArray
-                                )
-            normalizeCostArray finalCosts
-            proxels.[neighbourIndex].costMatrix.SetRow(computeIndexInNeighbour i, finalCosts)
-        | ValueNone -> ()
-    ) proxel.neighbourIndices
+    // Array.iteri (
+    //     fun i v ->
+    //     match v with
+    //     | ValueSome(neighbourIndex) ->
+    //         let costsWithoutSmoothness = outgoingMessages.AsRowArrays().[neighbourIndex]
+    //         printfn "got past the declaration of costwithoutsmoothness!"
+    //         let scratchSpaceArray = Array.zeroCreate parameters.maximumDisparity
+    //         let finalCosts = Array.init parameters.maximumDisparity
+    //                             (fun j ->
+    //                             Array.iteri (
+    //                                 fun k _ ->
+    //                                 scratchSpaceArray.[k] <- costsWithoutSmoothness.[k] + smoothnessCosts.[j,k]
+    //                             ) scratchSpaceArray
+    //                             Array.min scratchSpaceArray
+    //                             )
+    //         normalizeCostArray finalCosts
+    //         proxels.[neighbourIndex].costMatrix.SetRow(computeIndexInNeighbour i, finalCosts)
+    //     | ValueNone -> ()
+    // ) proxel.neighbourIndices
+
+    Seq.iteri (
+        fun i (costsWithoutSmoothness : Vector<float32>) ->
+            match proxel.neighbourIndices.[i] with
+            | ValueSome(neighbourIndex) ->
+                let scratchSpaceArray = Array.zeroCreate parameters.maximumDisparity
+                let finalCosts = Array.init parameters.maximumDisparity
+                                    (fun j ->
+                                    Array.iteri (
+                                        fun k _ ->
+                                        scratchSpaceArray.[k] <- costsWithoutSmoothness.[k] + smoothnessCosts.[j,k]
+                                    ) scratchSpaceArray
+                                    Array.min scratchSpaceArray
+                                    )
+                normalizeCostArray finalCosts
+                //printfn "finished normalizing costs!"
+                proxels.[neighbourIndex].costMatrix.SetRow(computeIndexInNeighbour i, finalCosts)
+            | ValueNone -> ()
+    ) (outgoingMessages.EnumerateRows())
+    // printfn "Just finished processing proxel number %d" proxelIndex
 
 // // This is intended to match eq. 2 in F & H 2006
 // let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
@@ -195,9 +207,7 @@ let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) 
 //     ) messages
 
 let computeFinalDisparities (proxels : OptionProxel[]) =
-    Array.map (fun p ->
-                    Vector.minIndex (p.costMatrix.ColumnSums()) |> byte
-    ) proxels
+    Array.map (fun p -> Vector.minIndex (p.costMatrix.ColumnSums()) |> byte) proxels
 
 // let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (messages : (int * float32 []) [] []) (finalDisparities : byte[]) =
 //     let dC = Array.fold (fun acc i ->
@@ -222,11 +232,9 @@ let getOddOrEvenProxels proxels oddOrEven =
                 1
             else
                 0
-        for i in startingIndex..2..(Array.length proxels) do
+        for i in startingIndex..2..(Array.length proxels - 1) do
             yield proxels.[i]
-    }
-
-
+    } |> Seq.skip 50000
 
 let beliefpropagation parameters bpparameters =
     let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
@@ -237,7 +245,7 @@ let beliefpropagation parameters bpparameters =
     let mutable oddOrEven = false
     for _i = 1 to bpparameters.iterations do
         //updateMessages parameters.maximumDisparity dataCosts smoothnessCosts messages1 messages2
-        Seq.iter (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
+        Seq.iteri (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
         // let temp = messages1
         // messages1 <- messages2
         // messages2 <- temp
