@@ -86,8 +86,8 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
             //     currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             // data.[leftIdx] <- currentPixelData
             let leftIdx = x + y * parameters.width
-            let currentPixelData = Array.zeroCreate (parameters.maximumDisparity + 1)
-            for d = parameters.maximumDisparity downto 0 do
+            let currentPixelData = Array.zeroCreate parameters.maximumDisparity
+            for d = (parameters.maximumDisparity - 1) downto 0 do
                 currentPixelData.[d] <-
                     dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             data.[leftIdx] <- currentPixelData
