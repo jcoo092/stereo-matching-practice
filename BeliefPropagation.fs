@@ -13,6 +13,23 @@ type BPParameters = {
     iterations: int
 }
 
+let hFH (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) i exclusionIndex =
+    let dcs = dataCosts.[i]
+    let thisPixel = messages.[i]
+    let neighbourCosts = Array.zeroCreate (Array.length dcs)
+    for (_, neighbour) in thisPixel do
+        Array.iteri (fun i x -> neighbourCosts.[i] <- neighbourCosts.[i] + x) neighbour
+    Array.iteri (fun i x -> neighbourCosts.[i] <- x + dcs.[i] - (snd thisPixel.[exclusionIndex]).[i]) neighbourCosts
+    neighbourCosts
+
+
+// Function to compute the message update value using the Potts model
+// Derived from the description in section 3.1 of F&H 2006
+let PottsFH (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) i d minhfp fq =
+    let thisH = hFH dataCosts messages i
+
+    min (hFH dataCosts messages i fq) (minhfp + d)
+
 let computeNeighbours parameters i =
     let x = i % parameters.width
     let y = i / parameters.width
@@ -50,7 +67,6 @@ let inline normalizeCostArray arr =
 // This is intended to match eq. 2 in F & H 2006
 //let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) oddOrEven (m : (int * float32 []) [] []) =
-// this function computes updates to the messages using data in m1, and stores it back to m2
 // p and q are used below in accordance with Felzenswalb & Huttenlocher's notation
     let startIndex = if oddOrEven then 0 else 1
     //Array.Parallel.iteri (fun i p -> // each pixel in the image
