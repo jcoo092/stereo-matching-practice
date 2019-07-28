@@ -80,9 +80,6 @@ let main argv =
 
     let imgWidth, imgHeight = results.GetResult LeftImage |> getImageSize
 
-    MathNet.Numerics.Control.ConfigureAuto()
-    printfn "%s" (MathNet.Numerics.Control.Describe())
-
     timer.Start()
 
     let outputImageArray =
