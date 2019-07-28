@@ -26,7 +26,7 @@ type CLIArguments =
     | [<EqualsAssignment;AltCommandLine("-w")>]Window of window_size:int
     | [<EqualsAssignment;AltCommandLine("-d")>]MaximumDisparity of max_disparity:int
     | [<Mandatory;AltCommandLine("-a");>]Algorithm of matching_algorithm:MatchingAlgorithms
-    | [<Mandatory;AltCommandLine("-n");>]NumberOfIterations of number_of_iterations:int
+    | [<EqualsAssignment;AltCommandLine("-n");>]NumberOfIterations of number_of_iterations:int
     | [<CliPrefix(CliPrefix.Dash)>] Z
 with
     interface IArgParserTemplate with

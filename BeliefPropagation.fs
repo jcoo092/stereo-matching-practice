@@ -36,19 +36,19 @@ type BPParameters = {
     iterations: int
 }
 
-let computeNeighbours parameters i =
-    let x = i % parameters.width
-    let y = i / parameters.width
+// let computeNeighbours parameters i =
+//     let x = i % parameters.width
+//     let y = i / parameters.width
 
-    // let mutable x = 0
-    // let y = Math.DivRem(i, parameters.width, &x)
+//     // let mutable x = 0
+//     // let y = Math.DivRem(i, parameters.width, &x)
 
-    [|
-        if y > 0 then yield i - parameters.width;
-        if x > 0 then yield i - 1;
-        if x < (parameters.width - 1) then yield i + 1;
-        if y < (parameters.height - 1) then yield i + parameters.width;
-    |]
+//     [|
+//         if y > 0 then yield i - parameters.width;
+//         if x > 0 then yield i - 1;
+//         if x < (parameters.width - 1) then yield i + 1;
+//         if y < (parameters.height - 1) then yield i + parameters.width;
+//     |]
 
 let computeOptionNeighbours parameters i =
         let x = i % parameters.width
@@ -97,8 +97,6 @@ let computeIndexInNeighbour =
     | x -> failwith (sprintf "Invalid neighbourIndexArrayPosition: %d" x)
 
 let inline normalizeCostArray arr =
-    // let mini = Array.min arr
-    // Array.iteri (fun i value -> arr.[i] <- value / mini) arr
     let offset = Array.average arr
     Array.iteri (fun i value -> arr.[i] <- value - offset) arr
 
@@ -139,13 +137,9 @@ let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) 
                                     Array.min scratchSpaceArray
                                     )
                 normalizeCostArray finalCosts
-                //printfn "finished normalizing costs!"
                 proxels.[neighbourIndex].costMatrix.SetRow(computeIndexInNeighbour i, finalCosts)
             | ValueNone -> ()
     ) (outgoingMessages.EnumerateRows())
-    // printfn "Just finished processing proxel number %d" proxelIndex
-    // if proxelIndex % 100 = 0 then
-    //     printfn "Just finished processing proxel number %d" proxelIndex
 
 let computeFinalDisparities (proxels : OptionProxel[]) =
     Array.map (fun p -> Vector.minIndex (p.costMatrix.ColumnSums()) |> byte) proxels
@@ -175,7 +169,7 @@ let getOddOrEvenProxels proxels oddOrEven =
                 0
         for i in startingIndex..2..(Array.length proxels - 1) do
             yield proxels.[i]
-    } //|> Seq.skip 1240
+    }
 
 let beliefpropagation parameters bpparameters =
     let dataCosts = Data.computeDataCosts parameters bpparameters.dataFunction
