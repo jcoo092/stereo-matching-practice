@@ -100,7 +100,7 @@ let inline normalizeCostArray arr =
     let offset = Array.average arr
     Array.iteri (fun i value -> arr.[i] <- value - offset) arr
 
-let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxelIndex proxel =
+let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxel =
     let outgoingMessages = proxel.neighboursMatrix.Multiply(proxel.costMatrix)
 
     // Array.iteri (
@@ -177,7 +177,7 @@ let beliefpropagation parameters bpparameters =
     let proxels = initOptionProxels parameters dataCosts
     let mutable oddOrEven = false
     for _i = 1 to bpparameters.iterations do
-        Seq.iteri (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
+        Seq.iter (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
         oddOrEven <- not oddOrEven
 
     //let findeps = computeFinalDisparities parameters dataCosts messages1
