@@ -5,7 +5,7 @@ let LAMBDA_FH = 0.07f
 [<Literal>]
 let TAU_FH = 15.0f
 [<Literal>]
-let C_FH = 1.7f
+let C_FH = 1.0f
 [<Literal>]
 let D_FH = 1.7f
 [<Literal>]

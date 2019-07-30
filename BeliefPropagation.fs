@@ -38,14 +38,16 @@ let inline normalizeCostArray arr =
     let normalizer = Array.average arr
     Array.iteri (fun i value -> arr.[i] <- value - normalizer) arr
 
+let inline truncateFH (minimum : ^a) (arr : ^a []) =
+    Array.iteri (fun i x -> if minimum < x then arr.[i] <- minimum) arr
+
 // This is pretty much directly lifted from F&H, both the paper and their sample code
-let dt m =
+let dtFH m =
     for fq = 1 to ((Array.length m) - 1) do
         m.[fq] <- min m.[fq] (m.[fq - 1] + Smoothness.C_FH)
 
     for fq = ((Array.length m) - 2) downto 0 do
         m.[fq] <- min m.[fq] (m.[fq + 1] + Smoothness.C_FH)
-
 
 // This is intended to match eq. 2 in F & H 2006
 //let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
@@ -98,7 +100,8 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
         for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
             let hfp = Array.map2 (( - )) neighbourMessageSums neighbourCosts
             let minhfp = (Array.min hfp) + Smoothness.D_FH
-            dt hfp
+            dtFH hfp
+            truncateFH minhfp hfp
             let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
             let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
             for fq = 0 to (min fpMax (Array.length mneighbourcosts)) - 1 do // each disparity label of q
