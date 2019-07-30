@@ -9,10 +9,10 @@ open MathNet.Numerics.LinearAlgebra
 
 let standardNeighboursMatrix =
     matrix [|
-        [|0.0f; 1.0f; 1.0f; 1.0f; 1.0f;|]; // Neighbour to the North
-        [|1.0f; 0.0f; 1.0f; 1.0f; 1.0f;|]; // Neighbour to the East
-        [|1.0f; 1.0f; 0.0f; 1.0f; 1.0f;|]; // Neighbour to the South
-        [|1.0f; 1.0f; 1.0f; 0.0f; 1.0f;|]; // Neighbour to the West
+        [|Matrix.Zero; Matrix.One; Matrix.One; Matrix.One; Matrix.One;|]; // Neighbour to the North
+        [|Matrix.One; Matrix.Zero; Matrix.One; Matrix.One; Matrix.One;|]; // Neighbour to the East
+        [|Matrix.One; Matrix.One; Matrix.Zero; Matrix.One; Matrix.One;|]; // Neighbour to the South
+        [|Matrix.One; Matrix.One; Matrix.One; Matrix.Zero; Matrix.One;|]; // Neighbour to the West
     |]
 
 [<Struct; Runtime.CompilerServices.IsByRefLike>]
@@ -35,20 +35,6 @@ type BPParameters = {
     smoothnessFunction: int -> int -> float32
     iterations: int
 }
-
-// let computeNeighbours parameters i =
-//     let x = i % parameters.width
-//     let y = i / parameters.width
-
-//     // let mutable x = 0
-//     // let y = Math.DivRem(i, parameters.width, &x)
-
-//     [|
-//         if y > 0 then yield i - parameters.width;
-//         if x > 0 then yield i - 1;
-//         if x < (parameters.width - 1) then yield i + 1;
-//         if y < (parameters.height - 1) then yield i + parameters.width;
-//     |]
 
 let computeOptionNeighbours parameters i =
         let x = i % parameters.width
@@ -100,28 +86,8 @@ let inline normalizeCostArray arr =
     let offset = Array.average arr
     Array.iteri (fun i value -> arr.[i] <- value - offset) arr
 
-let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxelIndex proxel =
+let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) (proxels : OptionProxel[]) proxel =
     let outgoingMessages = proxel.neighboursMatrix.Multiply(proxel.costMatrix)
-
-    // Array.iteri (
-    //     fun i v ->
-    //     match v with
-    //     | ValueSome(neighbourIndex) ->
-    //         let costsWithoutSmoothness = outgoingMessages.AsRowArrays().[neighbourIndex]
-    //         printfn "got past the declaration of costwithoutsmoothness!"
-    //         let scratchSpaceArray = Array.zeroCreate parameters.maximumDisparity
-    //         let finalCosts = Array.init parameters.maximumDisparity
-    //                             (fun j ->
-    //                             Array.iteri (
-    //                                 fun k _ ->
-    //                                 scratchSpaceArray.[k] <- costsWithoutSmoothness.[k] + smoothnessCosts.[j,k]
-    //                             ) scratchSpaceArray
-    //                             Array.min scratchSpaceArray
-    //                             )
-    //         normalizeCostArray finalCosts
-    //         proxels.[neighbourIndex].costMatrix.SetRow(computeIndexInNeighbour i, finalCosts)
-    //     | ValueNone -> ()
-    // ) proxel.neighbourIndices
 
     Seq.iteri (
         fun i (costsWithoutSmoothness : Vector<float32>) ->
@@ -144,22 +110,6 @@ let inline computeAndSendNewMessages parameters (smoothnessCosts : float32 [,]) 
 let computeFinalDisparities (proxels : OptionProxel[]) =
     Array.map (fun p -> Vector.minIndex (p.costMatrix.ColumnSums()) |> byte) proxels
 
-// let computeEnergy (dataCosts : float32 [][]) (smoothnessCosts : float32[,]) (messages : (int * float32 []) [] []) (finalDisparities : byte[]) =
-//     let dC = Array.fold (fun acc i ->
-//                             let finDepI = finalDisparities.[i] |> int
-//                             acc + dataCosts.[i].[finDepI]
-//                         ) 0.0f [|0..(Array.length finalDisparities) - 1|]
-//     //let sC = Array.Parallel.mapi (fun i p ->
-//     let sC = Array.mapi (fun i p ->
-//                             let fp = finalDisparities.[i] |> int
-//                             let mutable totalCost = 0.0f
-//                             for (neighbourIdx, _) in p do
-//                                 let fq = finalDisparities.[neighbourIdx] |> int
-//                                 totalCost <- totalCost + smoothnessCosts.[fp, fq]
-//                             totalCost
-//                         ) messages |> Array.sum
-//     dC + sC
-
 let getOddOrEvenProxels proxels oddOrEven =
     seq {
         let startingIndex =
@@ -177,11 +127,7 @@ let beliefpropagation parameters bpparameters =
     let proxels = initOptionProxels parameters dataCosts
     let mutable oddOrEven = false
     for _i = 1 to bpparameters.iterations do
-        Seq.iteri (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
+        Seq.iter (computeAndSendNewMessages parameters smoothnessCosts proxels) (getOddOrEvenProxels proxels oddOrEven)
         oddOrEven <- not oddOrEven
 
-    //let findeps = computeFinalDisparities parameters dataCosts messages1
-    let findeps = computeFinalDisparities proxels
-    //let finenergy = computeEnergy dataCosts smoothnessCosts messages1 findeps
-    // printfn "Final energy is: %f" (finenergy / float32 parameters.totalPixels)
-    findeps
+    computeFinalDisparities proxels
