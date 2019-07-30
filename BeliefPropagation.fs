@@ -54,6 +54,15 @@ let inline normalizeCostArray arr =
     let normalizer = Array.average arr
     Array.iteri (fun i value -> arr.[i] <- value - normalizer) arr
 
+// This is pretty much directly lifted from F&H, both the paper and their sample code
+let dt m =
+    for fq = 1 to ((Array.length m) - 1) do
+        m.[fq] <- min m.[fq] (m.[fq - 1] + Smoothness.C_FH)
+
+    for fq = ((Array.length m) - 2) downto 0 do
+        m.[fq] <- min m.[fq] (m.[fq + 1] + Smoothness.C_FH)
+
+
 // This is intended to match eq. 2 in F & H 2006
 //let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
 let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) oddOrEven (m : (int * float32 []) [] []) =
@@ -86,11 +95,9 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
 
     //             mneighbourcosts.[fq] <- mincost
 
-        // Using F&H's 'min convolution' style, where the message from p to q is computed as
-        // min_{f_p} (V(f_p - f_q) + h(f_p)), where h(f_p) is
-        // D_p(f_p) + the sum of the messages for f_p received from the other neighbours at t-1
-
-        // F&H Potts (sect 3.1)
+    // Using F&H's 'min convolution' style, where the message from p to q is computed as
+    // min_{f_p} (V(f_p - f_q) + h(f_p)), where h(f_p) is
+    // D_p(f_p) + the sum of the messages for f_p received from the other neighbours at t-1
     let startIndex = if oddOrEven then 0 else 1
     //Array.Parallel.iteri (fun i p -> // each pixel in the image
     for i in startIndex..2..((Array.length m) - 1) do
@@ -108,6 +115,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
             // printfn "i = %d, neighbourIdx = %d"  i neighbourIdx
             let hfp = Array.map2 (( - )) neighbourMessageSums neighbourCosts
             let minhfp = (Array.min hfp) + Smoothness.D_FH
+            dt hfp
             let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
             let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
             // printfn "mneighbourcosts length = %d, hfp length = %d, fpMax = %d" (Array.length mneighbourcosts) (Array.length hfp) fpMax
@@ -120,6 +128,39 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
                 //     if totalCost < mincost then
                 //         mincost <- totalCost
                 mneighbourcosts.[fq] <- min hfp.[fq] minhfp
+
+
+
+    //     // F&H Potts (sect 3.1)
+    // let startIndex = if oddOrEven then 0 else 1
+    // //Array.Parallel.iteri (fun i p -> // each pixel in the image
+    // for i in startIndex..2..((Array.length m) - 1) do
+    //     let p = m.[i]
+    // //Array.iteri (fun i p -> // each pixel in the image
+    //     let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
+    //     // let fpMax = ((Array.length dataCosts.[i]) - 1)
+    //     let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
+    //     for fp = 0 to fpMax do
+    //         for (_, (neighbourCosts : float32 [])) in p do
+    //             neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
+    //             // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
+    //             // It's easier just to include them here
+    //     for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
+    //         // printfn "i = %d, neighbourIdx = %d"  i neighbourIdx
+    //         let hfp = Array.map2 (( - )) neighbourMessageSums neighbourCosts
+    //         let minhfp = (Array.min hfp) + Smoothness.D_FH
+    //         let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
+    //         let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
+    //         // printfn "mneighbourcosts length = %d, hfp length = %d, fpMax = %d" (Array.length mneighbourcosts) (Array.length hfp) fpMax
+    //         for fq = 0 to (min fpMax (Array.length mneighbourcosts)) - 1 do // each disparity label of q
+    //             // let mutable mincost = Single.MaxValue
+    //             // for fp = 0 to fpMax do
+    //             //     let smoothnessCost = smoothnessCosts.[fp, fq]
+    //             //     let previousMessageCost = neighbourMessageSums.[fp] - neighbourCosts.[fp]
+    //             //     let totalCost = smoothnessCost + previousMessageCost
+    //             //     if totalCost < mincost then
+    //             //         mincost <- totalCost
+    //             mneighbourcosts.[fq] <- min hfp.[fq] minhfp
 
 
     //) m
