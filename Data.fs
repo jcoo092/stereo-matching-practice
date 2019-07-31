@@ -57,19 +57,20 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
     let data = Array.zeroCreate (parameters.width * parameters.height)
     for x = 0 to (parameters.width - 1) do
         for y = 0 to (parameters.height - 1) do
-            let leftIdx = x + y * parameters.width
-            let endOfRight = System.Math.Clamp(x - parameters.maximumDisparity, 0, leftIdx)
-            let currentPixelData = Array.zeroCreate (x - endOfRight + 1)
-            for d = (x - endOfRight) downto 0 do
-                currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
-            data.[leftIdx] <- currentPixelData
             // let leftIdx = x + y * parameters.width
-            // let currentPixelData = Array.zeroCreate (parameters.maximumDisparity + 1)
-            // for d = parameters.maximumDisparity downto 0 do
-            //     currentPixelData.[d] <-
-            //         if x - d < 0 then
-            //             dataCostFunction 255uy 0uy
-            //         else
-            //             dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
+            // let endOfRight = System.Math.Clamp(x - parameters.maximumDisparity, 0, leftIdx)
+            // let currentPixelData = Array.zeroCreate (x - endOfRight + 1)
+            // for d = (x - endOfRight) downto 0 do
+            //     currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             // data.[leftIdx] <- currentPixelData
+            let leftIdx = x + y * parameters.width
+            let currentPixelData = Array.zeroCreate (parameters.maximumDisparity + 1)
+            for d = parameters.maximumDisparity downto 0 do
+                currentPixelData.[d] <-
+                    if x - d < 0 then
+                        //dataCostFunction 255uy 0uy
+                        0.0f
+                    else
+                        dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
+            data.[leftIdx] <- currentPixelData
     data

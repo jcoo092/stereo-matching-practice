@@ -88,11 +88,13 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
     //Array.Parallel.iteri (fun i p -> // each pixel in the image
     //Array.iteri (fun i p -> // each pixel in the image
     let startIndex = if oddOrEven then 0 else 1
+    let neighbourMessageSums = Array.zeroCreate (maxD + 1)
     for i in startIndex..2..((Array.length m) - 1) do
+        System.Array.Fill(neighbourMessageSums, 0.0f)
         let p = m.[i]
-        let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
-        let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
-        for fp = 0 to fpMax do
+        //let fpMax = min maxD ((Array.length dataCosts.[i]) - 1)
+        // let neighbourMessageSums = Array.zeroCreate (fpMax + 1)
+        for fp = 0 to maxD do
             for (_, (neighbourCosts : float32 [])) in p do
                 neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
                 // Strictly speaking, data costs shouldn't be here, but since it is all additions, and data costs vary only by fp
@@ -104,7 +106,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
             truncateFH minhfp hfp
             let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
             let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
-            for fq = 0 to (min fpMax (Array.length mneighbourcosts)) - 1 do // each disparity label of q
+            for fq = 0 to maxD do // each disparity label of q
                 mneighbourcosts.[fq] <- min hfp.[fq] minhfp
 
     //Array.Parallel.iter (fun p ->
