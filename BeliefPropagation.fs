@@ -25,8 +25,8 @@ let computeNeighbours parameters i =
     |]
 
 let inline initMessages parameters (dataCosts : float32 [][]) =
-    //Array.Parallel.init (parameters.width * parameters.height) (
-    Array.init (parameters.width * parameters.height) (
+    Array.Parallel.init (parameters.width * parameters.height) (
+    // Array.init (parameters.width * parameters.height) (
         fun i ->
                 let neighbours = computeNeighbours parameters i
                 let arraysize = min ((parameters.maximumDisparity + 1)) ((Array.length dataCosts.[i]))
@@ -41,12 +41,24 @@ let inline truncateFH (minimum : ^a) (arr : ^a []) =
     Array.iteri (fun i x -> if minimum < x then arr.[i] <- minimum) arr
 
 // This is pretty much directly lifted from F&H, both the paper and their sample code
+// let dtFH m =
+//     for fq = 1 to ((Array.length m) - 1) do
+//         m.[fq] <- min m.[fq] (m.[fq - 1] + Smoothness.C_FH)
+
+//     for fq = ((Array.length m) - 2) downto 0 do
+//         m.[fq] <- min m.[fq] (m.[fq + 1] + Smoothness.C_FH)
+
 let dtFH m =
+    let mutable prev = 0.0f
     for fq = 1 to ((Array.length m) - 1) do
-        m.[fq] <- min m.[fq] (m.[fq - 1] + Smoothness.C_FH)
+        prev <- m.[fq - 1] + Smoothness.C_FH
+        if prev < m.[fq] then
+            m.[fq] <- prev
 
     for fq = ((Array.length m) - 2) downto 0 do
-        m.[fq] <- min m.[fq] (m.[fq + 1] + Smoothness.C_FH)
+        prev <- m.[fq + 1] + Smoothness.C_FH
+        if prev < m.[fq] then
+            m.[fq] <- prev
 
 // This is intended to match eq. 2 in F & H 2006
 //let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,]) (m1 : (int * float32 []) [] []) (m2 : (int * float32 []) [] []) =
@@ -105,10 +117,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
     //         for fq = 0 to maxD do // each disparity label of q
     //             mneighbourcosts.[fq] <- min hfp.[fq] minhfp
 
-    let startIndex = if indexIsEven then 0 else 1
-    // let neighbourMessageSums = Array.zeroCreate (maxD + 1)
     let processPixel loopIndex _loop neighbourMessageSums =
-        //fun loopIndex _loop neighbourMessageSums ->
         System.Array.Fill(neighbourMessageSums, 0.0f)
         let i =
             if indexIsEven then
@@ -124,7 +133,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
             let hfp = Array.map2 (( - )) neighbourMessageSums neighbourCosts
             let minhfp = (Array.min hfp) + Smoothness.D_FH
             dtFH hfp
-            truncateFH minhfp hfp
+            // truncateFH minhfp hfp
             let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
             let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
             for fq = 0 to maxD do // each disparity label of q
@@ -133,6 +142,7 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
         neighbourMessageSums
 
     let createThreadLocalArray = fun () -> Array.zeroCreate (maxD + 1)
+    let startIndex = if indexIsEven then 0 else 1
 
     Threading.Tasks.Parallel.For(
         startIndex,
@@ -142,35 +152,17 @@ let updateMessages maxD (dataCosts : float32 [][]) (smoothnessCosts : float32 [,
         ignore
     ) |> ignore
 
-    // for i in startIndex..2..((Array.length m) - 1) do
-    //     System.Array.Fill(neighbourMessageSums, 0.0f)
-    //     let p = m.[i]
-    //     for fp = 0 to maxD do
-    //         for (_, (neighbourCosts : float32 [])) in p do
-    //             neighbourMessageSums.[fp] <- neighbourMessageSums.[fp] + neighbourCosts.[fp] + dataCosts.[i].[fp]
-
-    //     for ((neighbourIdx : int), (neighbourCosts : float32 [])) in p do // each neighbour of the current pixel
-    //         let hfp = Array.map2 (( - )) neighbourMessageSums neighbourCosts
-    //         let minhfp = (Array.min hfp) + Smoothness.D_FH
-    //         dtFH hfp
-    //         truncateFH minhfp hfp
-    //         let indexInNeighbour = Array.findIndex (fst >> ((=) i)) m.[neighbourIdx]
-    //         let (_, mneighbourcosts) = m.[neighbourIdx].[indexInNeighbour]
-    //         for fq = 0 to maxD do // each disparity label of q
-    //             mneighbourcosts.[fq] <- min hfp.[fq] minhfp
-
-    //Array.Parallel.iter (fun p ->
-    Array.iter (fun p ->
+    Array.Parallel.iter (fun p ->
+    // Array.iter (fun p ->
                         Array.iter (fun (_, neighbourCosts) -> normalizeCostArray neighbourCosts) p
     ) m
 
 let computeFinalDisparities parameters (dataCosts : float32 [][]) (messages : (int * float32 []) [] []) =
     // Array.Parallel.mapi (fun i p ->
+    let maxFq = parameters.maximumDisparity
+    let beliefs = Array.zeroCreate (maxFq + 1)
     Array.mapi (fun i p ->
-        let maxFq = min parameters.maximumDisparity ((Array.length dataCosts.[i]) - 1)
-
         // Compute belief vector
-        let beliefs = Array.zeroCreate (maxFq + 1)
         for j = 0 to maxFq do
             let dataCost = dataCosts.[i].[j]
             let mutable messageCost = 0.0f

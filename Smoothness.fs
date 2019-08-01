@@ -17,6 +17,9 @@ let inline potts lambda a b =
     else
         lambda
 
+// A basic EPSILON comparison really isn't all that great (see e.g. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
+// but in this case it is pretty certain that the values will be reasonably close to each other
+// and not particularly close to 0 or far away from 1
 let inline pottsFloat32 (lambda: float32) (a : float32) b =
     if System.Math.Abs(a - b) < EPSILON_JAMES then
         0.0f
