@@ -1,5 +1,14 @@
+//Apparent image handling library choices:
+// https://github.com/image-rs/image - probably the 'main' library in the ecosystem, but I seem to recall it isn't that nice to use.
+//      It's the only one with support for PGMs though.
+// https://github.com/kosinix/raster - looks really good for my purposes, but seems to be dead, not updated since June 2018
+// https://github.com/kornelski/lodepng-rust - as the name suggests, it looks like this one only does pngs
+
 use std::path::PathBuf;
 use structopt::StructOpt;
+
+mod beliefpropagation;
+mod common;
 
 #[derive(Debug)]
 enum Algorithms {
@@ -94,6 +103,11 @@ struct CLIParameters {
         help = "Set this flag if you would like the program to use the zero-mean version of the unary cost function.  (Currently does nothing)"
     )]
     use_zero_mean: bool,
+    #[structopt(
+        short = "png",
+        help = "Set this flag if you would like the program to save the output image as a png.  Otherwise, it defaults to using the same file extension as on the left input image.  (Currently does nothing)"
+    )]
+    save_as_png: bool,
 }
 
 fn determine_output_file_path(params: &CLIParameters) -> PathBuf {
@@ -137,7 +151,30 @@ fn determine_output_file_path(params: &CLIParameters) -> PathBuf {
 
 fn main() {
     let cli_parameters = CLIParameters::from_args();
-    println!("{:?}", cli_parameters);
-    println!("{:#?}", cli_parameters.window_size);
+    // println!("{:?}", cli_parameters);
+    // println!("{:#?}", cli_parameters.window_size);
     //println!("Hello, world!");
+    let left_image = Vec::new();
+    let right_image = Vec::new();
+    let width = 50;
+    let height = 50;
+    let parameters = common::Parameters {
+        left_image,
+        right_image,
+        width,
+        height,
+        total_pixels: width * height,
+        window_edge_size: cli_parameters.window_size.unwrap_or(3),
+        maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32),
+        use_zero_mean: cli_parameters.use_zero_mean,
+    };
+
+    let output_vec = {
+        match cli_parameters.algorithm {
+            Algorithms::SAD => unimplemented!(),
+            Algorithms::SSD => unimplemented!(),
+            Algorithms::DynamicProgramming => unimplemented!(),
+            Algorithms::BeliefPropagation => beliefpropagation::belief_propagation(parameters),
+        }
+    };
 }
