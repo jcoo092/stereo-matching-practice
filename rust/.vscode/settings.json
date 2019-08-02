@@ -1,0 +1,4 @@
+{
+    "rust-client.revealOutputChannelOn": "warn",
+    "rust.clippy_preference": "on"
+}
