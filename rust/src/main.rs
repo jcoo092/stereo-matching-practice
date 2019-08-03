@@ -10,6 +10,7 @@ use structopt::StructOpt;
 
 mod beliefpropagation;
 mod common;
+mod data;
 
 #[derive(Debug)]
 enum Algorithms {
@@ -195,6 +196,7 @@ fn main() {
             Algorithms::BeliefPropagation => {
                 let bpparameters = beliefpropagation::BPParameters {
                     number_of_iterations : cli_parameters.number_of_iterations.unwrap_or(10u32),
+                    data_cost_function : data::absolute_difference_u8_to_f32,
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)},
         }
