@@ -1,5 +1,7 @@
 use crate::common;
 
+pub const D_FH : f32 = 1.7;
+
 pub fn truncated_linear(d: f32, a: u32, b: u32) -> f32 {
     f32::min((a as i32 - b as i32).abs() as f32, d)
 }

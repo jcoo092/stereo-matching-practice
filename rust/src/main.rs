@@ -198,7 +198,7 @@ fn main() {
                 let bpparameters = beliefpropagation::BPParameters {
                     number_of_iterations : cli_parameters.number_of_iterations.unwrap_or(10u32),
                     data_cost_function : data::absolute_difference_u8_to_f32,
-                    smoothness_cost_function: smoothness::truncated_linear,
+                    smoothness_cost_function: |x,y| smoothness::truncated_linear(smoothness::D_FH, x, y),
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)},
         }
