@@ -83,12 +83,12 @@ struct CLIParameters {
         short = "w",
         help = "The size of a side of the square window you would like to use for the matching.  Currently only relevant to SAD and SSD."
     )]
-    window_size: Option<usize>,
+    window_size: Option<u32>,
     #[structopt(
         short = "d",
         help = "The maximum disparity size that the program will search out to (defaults to 32)."
     )]
-    maximum_disparity: Option<usize>,
+    maximum_disparity: Option<u32>,
     #[structopt(
         short = "a",
         help = "The algorithm you would like to use for the stereo matching."
@@ -98,7 +98,7 @@ struct CLIParameters {
         short = "n",
         help = "The number of iterations of the algorithm to carry out.  Currently only relevant to belief propagation."
     )]
-    number_of_iterations: Option<usize>,
+    number_of_iterations: Option<u32>,
     #[structopt(
         short = "z",
         help = "Set this flag if you would like the program to use the zero-mean version of the unary cost function.  (Currently does nothing)"
@@ -182,8 +182,8 @@ fn main() {
         width: image_width,
         height: image_height,
         total_pixels: image_width * image_height,
-        window_edge_size: cli_parameters.window_size.unwrap_or(3),
-        maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32),
+        window_edge_size: cli_parameters.window_size.unwrap_or(3u32),
+        maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32u32),
         use_zero_mean: cli_parameters.use_zero_mean,
     };
 
@@ -192,7 +192,11 @@ fn main() {
             Algorithms::SAD => unimplemented!(),
             Algorithms::SSD => unimplemented!(),
             Algorithms::DynamicProgramming => unimplemented!(),
-            Algorithms::BeliefPropagation => beliefpropagation::belief_propagation(&parameters),
+            Algorithms::BeliefPropagation => {
+                let bpparameters = beliefpropagation::BPParameters {
+                    number_of_iterations : cli_parameters.number_of_iterations.unwrap_or(10u32),
+                };
+                beliefpropagation::belief_propagation(&parameters, &bpparameters)},
         }
     };
 

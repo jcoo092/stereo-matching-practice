@@ -5,7 +5,7 @@ pub struct Parameters {
     pub width: u32,
     pub height: u32,
     pub total_pixels: u32,
-    pub window_edge_size: usize,
-    pub maximum_disparity: usize,
+    pub window_edge_size: u32,
+    pub maximum_disparity: u32,
     pub use_zero_mean: bool,
 }
