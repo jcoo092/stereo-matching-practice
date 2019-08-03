@@ -1,16 +1,16 @@
 use crate::common;
-use std::ops;
+// use std::ops;
 
-pub fn squared_difference<T: ops::Mul<Output = T> + ops::Sub<Output = T> + Copy>(a: T, b: T) -> T {
-    (a - b) * (a - b)
-}
+// pub fn squared_difference<T: ops::Mul<Output = T> + ops::Sub<Output = T> + Copy>(a: T, b: T) -> T {
+//     (a - b) * (a - b)
+//}
 
 // pub fn absolute_difference<T: num_traits::sign::abs>(a : T, b : T) -> T {
 //     a.abs(b)
 // }
 
 pub fn absolute_difference_u8_to_f32(a: u8, b: u8) -> f32 {
-    (a as f32 - b as f32).abs()
+    (f32::from(a) - f32::from(b)).abs()
 }
 
 pub fn compute_data_costs<T, F>(
@@ -22,20 +22,23 @@ where
 {
     let mut data = Vec::with_capacity(parameters.total_pixels as usize);
     for y in 0..parameters.height {
-        for x in 0..parameters.width as i64 {
+        for x in 0..i64::from(parameters.width) {
             // let leftIdx = x + y * parameters.width;
-            let mut currentPixelData = Vec::with_capacity(parameters.maximum_disparity as usize);
-            for d in 0..parameters.maximum_disparity as i64 {
+            let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);
+            for d in 0..i64::from(parameters.maximum_disparity) {
                 let data_cost = {
                     if (x - d) < 0 {
                         data_cost_function(255u8, 0u8)
                     } else {
-                        data_cost_function(parameters.left_image[x as usize], parameters.right_image[(x - d) as usize])
+                        data_cost_function(
+                            parameters.left_image[x as usize],
+                            parameters.right_image[(x - d) as usize],
+                        )
                     }
                 };
-                currentPixelData.push(data_cost);
+                current_pixel_data.push(data_cost);
             }
-            data.push(currentPixelData);
+            data.push(current_pixel_data);
         }
     }
     data

@@ -41,10 +41,10 @@ fn update_messages<
     messages1: &[Vec<T>],
     messages2: &mut Vec<Vec<T>>,
 ) {
-    let maxD = parameters.maximum_disparity as usize;
+    let max_d = parameters.maximum_disparity as usize;
     for (i, v) in messages1.iter().enumerate() {
-        let mut neighbour_messages_sums = vec![T::default(); maxD];
-        for fp in 0..maxD {
+        let mut neighbour_messages_sums = vec![T::default(); max_d];
+        for fp in 0..max_d {
             for neighbour_index in &neighbourhoods[i] {
                 neighbour_messages_sums[fp] = neighbour_messages_sums[fp]
                     + data_costs[i][fp]
