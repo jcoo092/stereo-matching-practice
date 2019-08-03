@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.2.10"
+image = "0.21.0"
+imageproc = "0.18.0"

@@ -4,6 +4,7 @@
 // https://github.com/kosinix/raster - looks really good for my purposes, but seems to be dead, not updated since June 2018
 // https://github.com/kornelski/lodepng-rust - as the name suggests, it looks like this one only does pngs
 
+use image::GenericImageView;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -111,59 +112,76 @@ struct CLIParameters {
 }
 
 fn determine_output_file_path(params: &CLIParameters) -> PathBuf {
-    let algorithm_string = std::ffi::OsString::from(format!("_{}", params.algorithm));
+    let algorithm_string = format!("{}", params.algorithm);
     let left_image_name_without_extension = params
         .left_image_path
         .file_stem()
-        .expect("Left image name apparently has no file name (???)");
-    let left_image_extension = params
-        .left_image_path
-        .extension()
-        .expect("Left image name apparently has no extension (???)");
-    let window_size = {
-        let base_string: String = if params.window_size.is_some() {
-            format!("_{}", params.window_size.unwrap())
+        .expect("Left image name apparently has no file name (???)")
+        .to_str()
+        .unwrap();
+
+    let left_image_extension = {
+        if params.save_as_png {
+            ".png"
         } else {
-            String::new()
-        };
-        std::ffi::OsString::from(base_string)
+            params
+                .left_image_path
+                .extension()
+                .expect("Left image name apparently has no extension (???)")
+                .to_str()
+                .unwrap()
+        }
     };
 
-    let number_of_iterations = {
-        let base_string = if params.number_of_iterations.is_some() {
-            format!("_{}", params.number_of_iterations.unwrap())
-        } else {
-            String::new()
-        };
-        std::ffi::OsString::from(base_string)
+    let window_size = if params.window_size.is_some() {
+        format!("{}", params.window_size.unwrap())
+    } else {
+        String::new()
     };
 
-    [
-        left_image_name_without_extension,
-        &algorithm_string,
-        &window_size,
-        &number_of_iterations,
-        left_image_extension,
-    ]
-    .iter()
-    .collect()
+    let number_of_iterations = if params.number_of_iterations.is_some() {
+        format!("{}", params.number_of_iterations.unwrap())
+    } else {
+        String::new()
+    };
+
+    let mut filename = params.output_directory.to_owned();
+
+    filename.push(
+        &[
+            "rust",
+            left_image_name_without_extension,
+            &algorithm_string,
+            &window_size,
+            &number_of_iterations,
+        ]
+        .join("_"),
+    );
+
+    filename.set_extension(left_image_extension);
+    filename
 }
 
 fn main() {
     let cli_parameters = CLIParameters::from_args();
-    // println!("{:?}", cli_parameters);
-    // println!("{:#?}", cli_parameters.window_size);
-    //println!("Hello, world!");
-    let left_image = Vec::new();
-    let right_image = Vec::new();
-    let width = 50;
-    let height = 50;
+    assert!(cli_parameters.output_directory.is_dir());
+    let output_filename = determine_output_file_path(&cli_parameters);
+
+    let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
+
+    let (image_width, image_height) = left_image.dimensions();
+
+    let left_image_buffer = left_image.grayscale().raw_pixels();
+    let right_image_buffer = image::open(cli_parameters.right_image_path)
+        .expect("Couldn't open right image")
+        .grayscale()
+        .raw_pixels();
     let parameters = common::Parameters {
-        left_image,
-        right_image,
-        width,
-        height,
-        total_pixels: width * height,
+        left_image: left_image_buffer,
+        right_image: right_image_buffer,
+        width: image_width,
+        height: image_height,
+        total_pixels: image_width * image_height,
         window_edge_size: cli_parameters.window_size.unwrap_or(3),
         maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32),
         use_zero_mean: cli_parameters.use_zero_mean,
@@ -174,7 +192,26 @@ fn main() {
             Algorithms::SAD => unimplemented!(),
             Algorithms::SSD => unimplemented!(),
             Algorithms::DynamicProgramming => unimplemented!(),
-            Algorithms::BeliefPropagation => beliefpropagation::belief_propagation(parameters),
+            Algorithms::BeliefPropagation => beliefpropagation::belief_propagation(&parameters),
         }
     };
+
+    let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
+        image_width,
+        image_height,
+        output_vec,
+    )
+    .expect("Error creating the output image!");
+    imageproc::contrast::equalize_histogram_mut(&mut output_image);
+
+    assert!(output_image.save(output_filename).is_ok());
+
+    // assert!(image::save_buffer(
+    //     output_filename,
+    //     &output_vec,
+    //     image_width,
+    //     image_height,
+    //     image::ColorType::Gray(255),
+    // )
+    // .is_ok());
 }
