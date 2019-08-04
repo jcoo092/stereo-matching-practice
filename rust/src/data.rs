@@ -5,7 +5,7 @@ use crate::common;
 //     (a - b) * (a - b)
 //}
 
-// pub fn absolute_difference<T: num_traits::sign::abs>(a : T, b : T) -> T {
+// pub fn absolute_difference<T: num_traits::sign::abs>(a: T, b: T) -> T {
 //     a.abs(b)
 // }
 
@@ -21,8 +21,8 @@ where
     F: Fn(u8, u8) -> T,
 {
     let mut data = Vec::with_capacity(parameters.total_pixels as usize);
-    for y in 0..parameters.height {
-        for x in 0..i64::from(parameters.width) {
+    for _y in 0..parameters.height {
+        for x in i64::from(parameters.maximum_disparity - 1)..i64::from(parameters.width) {
             // let leftIdx = x + y * parameters.width;
             let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);
             for d in 0..i64::from(parameters.maximum_disparity) {
