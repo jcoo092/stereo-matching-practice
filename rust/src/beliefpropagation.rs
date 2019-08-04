@@ -37,7 +37,7 @@ fn normalise_cost_f32_vec(cost_vec: &mut Vec<f32>) {
     }
 }
 
-fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum {
+fn normalise_cost_vec<'a, T: 'a>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum<&'a T> {
     let average = common::compute_mean_of_vec(cost_vec);
     for c in cost_vec {
         *c -= average;
@@ -52,7 +52,7 @@ fn normalise_all_messages_f32(message_vec: &mut Vec<Vec<Vec<f32>>>) {
     }
 }
 
-fn normalise_all_messages<T>(message_vec: &mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum {
+fn normalise_all_messages<'a, T: 'a>(message_vec: &'a mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum<&'a T> {
     for v in message_vec.iter_mut() {
         for w in v.iter_mut() {
             normalise_cost_vec(w);
@@ -102,8 +102,8 @@ fn update_messages<
     }
 }
 
-pub fn belief_propagation<
-    T: std::default::Default
+pub fn belief_propagation<'a,
+    T: 'a +  std::default::Default
         + std::clone::Clone
         + std::ops::Add<Output = T>
         + Copy
@@ -114,7 +114,7 @@ pub fn belief_propagation<
         + num::traits::cast::FromPrimitive
         + num::traits::identities::Zero
         + std::ops::Div<Output = T>
-        + std::iter::Sum
+        + std::iter::Sum<&'a T>
 >(
     parameters: &common::Parameters,
     bpparameters: &BPParameters<T>,

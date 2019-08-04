@@ -37,9 +37,9 @@ pub fn compute_mean_of_f32_vec(input_vec: &[f32]) -> f32 {
 //     total / T::from(input_vec.len() as u32)
 // }
 
-pub fn compute_mean_of_vec<T>(input_vec: &Vec<T>) -> T
+pub fn compute_mean_of_vec<'a, T: 'a>(input_vec: &'a Vec<T>) -> T
 where
-    T: Copy + num::Zero + std::ops::Add<T, Output = T> + std::ops::Div<T, Output = T> + num::FromPrimitive + std::iter::Sum<&T>,
+    T: Copy + num::Zero + std::ops::Add<T, Output = T> + std::ops::Div<T, Output = T> + num::FromPrimitive + std::iter::Sum<&'a T>,
     // T: num::Num + num::FromPrimitive,
 {
         let sum : T = input_vec.iter().sum();
