@@ -1,6 +1,7 @@
 use crate::common;
 use crate::data;
 use crate::smoothness;
+use std::convert::TryInto;
 
 pub struct BPParameters<T> {
     pub number_of_iterations: u32,
@@ -37,7 +38,7 @@ fn normalise_cost_f32_vec(cost_vec: &mut Vec<f32>) {
     }
 }
 
-fn normalise_cost_vec<'a, T: 'a>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum<&'a T> {
+fn normalise_cost_vec<'a, T>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum<&'a T> {
     let average = common::compute_mean_of_vec(cost_vec);
     for c in cost_vec {
         *c -= average;
@@ -52,7 +53,7 @@ fn normalise_all_messages_f32(message_vec: &mut Vec<Vec<Vec<f32>>>) {
     }
 }
 
-fn normalise_all_messages<'a, T: 'a>(message_vec: &'a mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum<&'a T> {
+fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum<&'b T> {
     for v in message_vec.iter_mut() {
         for w in v.iter_mut() {
             normalise_cost_vec(w);
@@ -102,8 +103,23 @@ fn update_messages<
     }
 }
 
-pub fn belief_propagation<'a,
-    T: 'a +  std::default::Default
+fn compute_final_disparity<T>(max_d: usize, data_costs: &Vec<Vec<T>>, pixel_index: usize, pixel_messages: &Vec<Vec<T>>) -> u8 where T: std::default::Default + std::ops::AddAssign + Copy + std::cmp::PartialOrd {
+    let mut beliefs : Vec<T> = Vec::with_capacity(max_d);
+    for i in 0..max_d {
+        // let data_cost = &data_costs[pixel_index][i];
+        // let mut message_cost = T::default();
+        let mut message_cost = data_costs[pixel_index][i];
+        for neighbour_costs in pixel_messages {
+            message_cost += neighbour_costs[i];
+        }
+        beliefs.push(message_cost);
+    }
+
+    common::argmin_of_vec(&beliefs).try_into().unwrap()
+}
+
+pub fn belief_propagation<'c,
+    T: 'c +  std::default::Default
         + std::clone::Clone
         + std::ops::Add<Output = T>
         + Copy
@@ -114,7 +130,7 @@ pub fn belief_propagation<'a,
         + num::traits::cast::FromPrimitive
         + num::traits::identities::Zero
         + std::ops::Div<Output = T>
-        + std::iter::Sum<&'a T>
+        + std::iter::Sum<&'c T>
 >(
     parameters: &common::Parameters,
     bpparameters: &BPParameters<T>,
@@ -149,18 +165,18 @@ pub fn belief_propagation<'a,
     let mut messages2 = messages1.clone();
 
     for _i in 0..bpparameters.number_of_iterations {
-        update_messages(
+        {update_messages(
             parameters,
             &data_costs,
             &smoothness_costs,
             &neighbourhoods,
             &messages1,
             &mut messages2,
-        );
-        normalise_all_messages(&mut messages2);
+        );}
+        {normalise_all_messages(&mut messages2);}
 
-        std::mem::swap(&mut messages1, &mut messages2);
+        {std::mem::swap(&mut messages1, &mut messages2);}
     }
 
-    Vec::new()
+    messages1.iter().enumerate().map(|(i, p)| compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)).collect()
 }
