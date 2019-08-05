@@ -26,11 +26,11 @@ pub struct Parameters {
 //     input_vec.iter().sum::<T>() / T::from(input_vec.len())
 // }
 
-pub fn compute_mean_of_f32_vec(input_vec: &[f32]) -> f32 {
-    let total: f32 = input_vec.iter().sum();
-    total / (input_vec.len() as f32)
-    // input_vec.iter().sum() / (input_vec.len() as f32)
-}
+// pub fn compute_mean_of_f32_vec(input_vec: &[f32]) -> f32 {
+//     let total: f32 = input_vec.iter().sum();
+//     total / (input_vec.len() as f32)
+//     // input_vec.iter().sum() / (input_vec.len() as f32)
+// }
 
 // pub fn compute_mean_of_vec<T>(input_vec: &Vec<T>) -> T {
 //     let total = input_vec.iter().sum();
@@ -38,9 +38,10 @@ pub fn compute_mean_of_f32_vec(input_vec: &[f32]) -> f32 {
 // }
 
 // Blatantly stolen from StackOverflow...  unfortunately I have lost track of precisely where...
-pub fn compute_mean_of_vec<'a, T>(input_vec: &'a Vec<T>) -> T
+// pub fn compute_mean_of_vec<'g, T>(input_vec: &'g Vec<T>) -> T
+pub fn compute_mean_of_vec<'g, T>(input_vec: &'g [T]) -> T
 where
-    T: Copy + num::Zero + std::ops::Add<T, Output = T> + std::ops::Div<T, Output = T> + num::FromPrimitive + std::iter::Sum<&'a T>,
+    T: Copy + num::Zero + std::ops::Add<T, Output = T> + std::ops::Div<T, Output = T> + num::FromPrimitive + std::iter::Sum<&'g T>,
     // T: num::Num + num::FromPrimitive,
 {
         let sum : T = input_vec.iter().sum();
@@ -55,12 +56,18 @@ pub fn argmin_of_vec<T>(input_vec: &Vec<T>) -> usize where T: Copy + std::cmp::P
 
 #[cfg(test)]
 mod tests {
-    use super::compute_mean_of_f32_vec;
+    // use super::compute_mean_of_f32_vec;
+    use super::compute_mean_of_vec;
     #[test]
-    fn test_compute_mean_of_f32_vec() {
-        let test_vec = vec![5.0f32, 5.0f32, 5.0f32, 5.0f32];
-        // unimplemented!();
-        let mean = compute_mean_of_f32_vec(&test_vec);
+    // fn test_compute_mean_of_f32_vec() {
+    //     let test_vec = vec![5.0f32, 5.0f32, 5.0f32, 5.0f32];
+    //     let mean = compute_mean_of_f32_vec(&test_vec);
+    //     let result = (mean - 5.0f32).abs();
+    //     assert!(result <= std::f32::EPSILON);
+    // }
+    fn test_compute_mean_of_vec_f32_five_fives() {
+        let test_vec = vec![5.0f32; 5];
+        let mean = compute_mean_of_vec(&test_vec);
         let result = (mean - 5.0f32).abs();
         assert!(result <= std::f32::EPSILON);
     }

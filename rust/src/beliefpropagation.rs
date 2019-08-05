@@ -31,27 +31,27 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
     neighbour_vec
 }
 
-fn normalise_cost_f32_vec(cost_vec: &mut Vec<f32>) {
-    let average = common::compute_mean_of_f32_vec(cost_vec);
-    for c in cost_vec {
-        *c -= average;
-    }
-}
+// fn normalise_cost_f32_vec(cost_vec: &mut Vec<f32>) {
+//     let average = common::compute_mean_of_f32_vec(cost_vec);
+//     for c in cost_vec {
+//         *c -= average;
+//     }
+// }
 
 fn normalise_cost_vec<'a, T>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum<&'a T> {
-    let average = common::compute_mean_of_vec(cost_vec);
-    for c in cost_vec {
-        *c -= average;
+    let mean = common::compute_mean_of_vec(cost_vec);
+    for c in cost_vec.iter_mut() {
+        *c -= mean;
     }
 }
 
-fn normalise_all_messages_f32(message_vec: &mut Vec<Vec<Vec<f32>>>) {
-    for v in message_vec.iter_mut() {
-        for w in v.iter_mut() {
-            normalise_cost_f32_vec(w);
-        }
-    }
-}
+// fn normalise_all_messages_f32(message_vec: &mut Vec<Vec<Vec<f32>>>) {
+//     for v in message_vec.iter_mut() {
+//         for w in v.iter_mut() {
+//             normalise_cost_f32_vec(w);
+//         }
+//     }
+// }
 
 fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum<&'b T> {
     for v in message_vec.iter_mut() {
@@ -82,8 +82,6 @@ fn update_messages<
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
             for neighbour_index in &neighbourhoods[i] {
-                // neighbour_messages_sums[fp] =
-                // neighbour_messages_sums[fp] + data_costs[i][fp] + v[*neighbour_index][fp];
                 *nms += data_costs[i][fp] + v[*neighbour_index][fp];
             }
         }
@@ -147,11 +145,6 @@ pub fn belief_propagation<'c,
         neighbour_vecs
     };
 
-    // let mut messages1 = vec![
-    //     vec![T::default(); parameters.maximum_disparity as usize];
-    //     parameters.total_pixels as usize
-    // ];
-
     let mut messages1 = (0..parameters.total_pixels as usize)
         .map(|i| {
             let this_pixels_neighbours = &neighbourhoods[i];
@@ -165,17 +158,17 @@ pub fn belief_propagation<'c,
     let mut messages2 = messages1.clone();
 
     for _i in 0..bpparameters.number_of_iterations {
-        {update_messages(
+        update_messages(
             parameters,
             &data_costs,
             &smoothness_costs,
             &neighbourhoods,
             &messages1,
             &mut messages2,
-        );}
-        {normalise_all_messages(&mut messages2);}
+        );
+        normalise_all_messages(&mut messages2);
 
-        {std::mem::swap(&mut messages1, &mut messages2);}
+        std::mem::swap(&mut messages1, &mut messages2);
     }
 
     messages1.iter().enumerate().map(|(i, p)| compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)).collect()
