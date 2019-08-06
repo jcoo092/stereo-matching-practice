@@ -19,9 +19,13 @@ pub fn compute_data_costs<T, F>(
 ) -> Vec<Vec<T>>
 where
     F: Fn(u8, u8) -> T,
+    T: std::default::Default + Clone,
 {
     let mut data = Vec::with_capacity(parameters.total_pixels as usize);
     for _y in 0..parameters.height {
+        for _x in 0..i64::from(parameters.maximum_disparity - 1) {
+            data.push(vec![T::default(); parameters.maximum_disparity as usize]);
+        }
         for x in i64::from(parameters.maximum_disparity - 1)..i64::from(parameters.width) {
             // let leftIdx = x + y * parameters.width;
             let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);

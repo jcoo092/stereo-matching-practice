@@ -38,7 +38,15 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
 //     }
 // }
 
-fn normalise_cost_vec<'a, T>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAssign + Copy + num::traits::identities::Zero + std::ops::Div<Output = T> + num::traits::cast::FromPrimitive + std::iter::Sum<&'a T> {
+fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
+where
+    for<'x> T: std::ops::SubAssign
+        + Copy
+        + num::traits::identities::Zero
+        + std::ops::Div<Output = T>
+        + num::traits::cast::FromPrimitive
+        + std::iter::Sum<&'x T>,
+{
     let mean = common::compute_mean_of_vec(cost_vec);
     for c in cost_vec.iter_mut() {
         *c -= mean;
@@ -53,7 +61,15 @@ fn normalise_cost_vec<'a, T>(cost_vec: &'a mut Vec<T>) where T: std::ops::SubAss
 //     }
 // }
 
-fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>) where T: Copy + std::ops::SubAssign + num::traits::cast::FromPrimitive + std::ops::Div<Output = T> + num::traits::identities::Zero + std::iter::Sum<&'b T> {
+fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>)
+where
+    for<'x> T: Copy
+        + std::ops::SubAssign
+        + num::traits::cast::FromPrimitive
+        + std::ops::Div<Output = T>
+        + num::traits::identities::Zero
+        + std::iter::Sum<&'x T>,
+{
     for v in message_vec.iter_mut() {
         for w in v.iter_mut() {
             normalise_cost_vec(w);
@@ -78,31 +94,54 @@ fn update_messages<
     messages2: &mut Vec<Vec<Vec<T>>>,
 ) {
     let max_d = parameters.maximum_disparity as usize;
-    for (i, v) in messages1.iter().enumerate() {
+    for (i, m1) in messages1.iter().enumerate() {
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
-            for neighbour_index in &neighbourhoods[i] {
-                *nms += data_costs[i][fp] + v[*neighbour_index][fp];
+            // for neighbourhoods_index in 0..neighbourhoods[i].len() {
+            for m1ni in m1.iter() {
+                *nms += data_costs[i][fp] + m1ni[fp];
             }
         }
-        for (index_in_neighbour, neighbour_index) in neighbourhoods[i].iter().enumerate() {
-            let neighbour_costs = &v[*neighbour_index];
+        for (j, neighbour_index) in neighbourhoods[i].iter().enumerate() {
+            // let neighbour_costs = &m1[*neighbour_index];
+            // let index_in_neighbour = [*neighbour_index];
+            // let neighbour_costs = &m1[index_in_neighbour];
+            let index_in_neighbour = neighbourhoods[*neighbour_index]
+                .iter()
+                .position(|x| *x == i)
+                .expect("Didn't find the current pixel in its neighbour's neighbourhood");
             let m2_neighbour_costs = &mut messages2[*neighbour_index][index_in_neighbour];
-            for fq in 0..max_d {
-                // let mutable min_cost =
+            // for fq in 0..max_d {
+            //     // let mutable min_cost =
+            //     let min_cost = (0..max_d)
+            //         .map(|fp| {
+            //             smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - neighbour_costs[fp]
+            //         })
+            //         .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."));
+            //     m2_neighbour_costs[fq] = min_cost.unwrap(); // If this is ever empty, something has REALLY gone wrong
+            // }
+            for (fq, m2nc) in m2_neighbour_costs.iter_mut().enumerate() {
                 let min_cost = (0..max_d)
-                    .map(|fp| {
-                        smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - neighbour_costs[fp]
-                    })
-                    .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."));
-                m2_neighbour_costs[fq] = min_cost.unwrap(); // If this is ever empty, something has REALLY gone wrong
+                    .map(|fp| smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - m1[j][fp])
+                    .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."))
+                    .unwrap();
+                // m2_neighbour_costs[fq] = min_cost.unwrap(); // If this is ever empty, something has REALLY gone wrong
+                *m2nc = min_cost; // If this is ever empty, something has REALLY gone wrong
             }
         }
     }
 }
 
-fn compute_final_disparity<T>(max_d: usize, data_costs: &Vec<Vec<T>>, pixel_index: usize, pixel_messages: &Vec<Vec<T>>) -> u8 where T: std::default::Default + std::ops::AddAssign + Copy + std::cmp::PartialOrd {
-    let mut beliefs : Vec<T> = Vec::with_capacity(max_d);
+fn compute_final_disparity<T>(
+    max_d: usize,
+    data_costs: &[Vec<T>],
+    pixel_index: usize,
+    pixel_messages: &[Vec<T>],
+) -> u8
+where
+    T: std::default::Default + std::ops::AddAssign + Copy + std::cmp::PartialOrd,
+{
+    let mut beliefs: Vec<T> = Vec::with_capacity(max_d);
     for i in 0..max_d {
         // let data_cost = &data_costs[pixel_index][i];
         // let mut message_cost = T::default();
@@ -116,8 +155,13 @@ fn compute_final_disparity<T>(max_d: usize, data_costs: &Vec<Vec<T>>, pixel_inde
     common::argmin_of_vec(&beliefs).try_into().unwrap()
 }
 
-pub fn belief_propagation<'c,
-    T: 'c +  std::default::Default
+pub fn belief_propagation<'c, T>(
+    parameters: &common::Parameters,
+    bpparameters: &BPParameters<T>,
+) -> Vec<u8>
+where
+    for<'x> T: 'c
+        + std::default::Default
         + std::clone::Clone
         + std::ops::Add<Output = T>
         + Copy
@@ -128,11 +172,8 @@ pub fn belief_propagation<'c,
         + num::traits::cast::FromPrimitive
         + num::traits::identities::Zero
         + std::ops::Div<Output = T>
-        + std::iter::Sum<&'c T>
->(
-    parameters: &common::Parameters,
-    bpparameters: &BPParameters<T>,
-) -> Vec<u8> {
+        + std::iter::Sum<&'x T>,
+{
     let data_costs = data::compute_data_costs(&parameters, bpparameters.data_cost_function);
     let smoothness_costs =
         smoothness::compute_smoothness_costs(&parameters, bpparameters.smoothness_cost_function);
@@ -171,5 +212,11 @@ pub fn belief_propagation<'c,
         std::mem::swap(&mut messages1, &mut messages2);
     }
 
-    messages1.iter().enumerate().map(|(i, p)| compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)).collect()
+    messages1
+        .iter()
+        .enumerate()
+        .map(|(i, p)| {
+            compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
+        })
+        .collect()
 }
