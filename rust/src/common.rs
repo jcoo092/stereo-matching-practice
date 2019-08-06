@@ -1,7 +1,7 @@
 // Parameters common to every matching algorithm
-pub struct Parameters {
-    pub left_image: Vec<u8>,
-    pub right_image: Vec<u8>,
+pub struct Parameters<'a> {
+    pub left_image: &'a Vec<u8>,
+    pub right_image: &'a Vec<u8>,
     pub width: u32,
     pub height: u32,
     pub total_pixels: u32,
@@ -9,6 +9,10 @@ pub struct Parameters {
     pub maximum_disparity: u32,
     pub use_zero_mean: bool,
 }
+
+pub const LAMBDA_FH: f32 = 0.07;
+pub const TAU_FH: f32 = 15.0;
+pub const D_FH: f32 = 1.7;
 
 // Blatantly stolen from StackOverflow...  unfortunately I have lost track of precisely where...
 // pub fn compute_mean_of_vec<'g, T>(input_vec: &'g Vec<T>) -> T

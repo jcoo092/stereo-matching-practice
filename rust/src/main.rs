@@ -176,8 +176,8 @@ fn main() {
         .grayscale()
         .raw_pixels();
     let parameters = common::Parameters {
-        left_image: left_image_buffer,
-        right_image: right_image_buffer,
+        left_image: &left_image_buffer,
+        right_image: &right_image_buffer,
         width: image_width,
         height: image_height,
         total_pixels: image_width * image_height,
@@ -194,9 +194,12 @@ fn main() {
             Algorithms::BeliefPropagation => {
                 let bpparameters = beliefpropagation::BPParameters {
                     number_of_iterations: cli_parameters.number_of_iterations.unwrap_or(10u32),
-                    data_cost_function: data::absolute_difference_u8_to_f32,
+                    // data_cost_function: data::absolute_difference_u8_to_f32,
+                    data_cost_function: |a, b| {
+                        data::truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, a, b)
+                    },
                     smoothness_cost_function: |x, y| {
-                        smoothness::truncated_linear(smoothness::D_FH, x, y)
+                        smoothness::truncated_linear_f32_fh(common::D_FH, x, y)
                     },
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)

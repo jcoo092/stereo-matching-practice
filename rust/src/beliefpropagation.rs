@@ -33,12 +33,12 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
 
 fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
 where
-    for<'x> T: std::ops::SubAssign
-        + Copy
+    for<'x> T: Copy
         + num::traits::identities::Zero
-        + std::ops::Div<Output = T>
         + num::traits::cast::FromPrimitive
-        + std::iter::Sum<&'x T>,
+        + std::iter::Sum<&'x T>
+        + num::traits::NumOps
+        + num::traits::NumAssignOps,
 {
     let mean = common::compute_mean_of_vec(cost_vec);
     for c in cost_vec.iter_mut() {
@@ -49,11 +49,11 @@ where
 fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>)
 where
     for<'x> T: Copy
-        + std::ops::SubAssign
         + num::traits::cast::FromPrimitive
-        + std::ops::Div<Output = T>
         + num::traits::identities::Zero
-        + std::iter::Sum<&'x T>,
+        + std::iter::Sum<&'x T>
+        + num::traits::NumOps
+        + num::traits::NumAssignOps,
 {
     for v in message_vec.iter_mut() {
         for w in v.iter_mut() {
@@ -64,12 +64,11 @@ where
 
 fn update_messages<
     T: std::default::Default
-        + std::ops::Add<Output = T>
         + std::clone::Clone
         + Copy
-        + std::ops::AddAssign
-        + std::ops::Sub<Output = T>
-        + std::cmp::PartialOrd,
+        + std::cmp::PartialOrd
+        + num::traits::NumOps
+        + num::traits::NumAssignOps,
 >(
     parameters: &common::Parameters,
     data_costs: &[Vec<T>],
@@ -132,16 +131,13 @@ where
     for<'x> T: 'c
         + std::default::Default
         + std::clone::Clone
-        + std::ops::Add<Output = T>
         + Copy
-        + std::ops::Sub<Output = T>
-        + std::ops::AddAssign
         + std::cmp::PartialOrd
-        + std::ops::SubAssign
         + num::traits::cast::FromPrimitive
         + num::traits::identities::Zero
-        + std::ops::Div<Output = T>
-        + std::iter::Sum<&'x T>,
+        + std::iter::Sum<&'x T>
+        + num::traits::NumOps
+        + num::traits::NumAssignOps,
 {
     let data_costs = data::compute_data_costs(&parameters, bpparameters.data_cost_function);
     let smoothness_costs =
