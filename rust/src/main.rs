@@ -25,7 +25,6 @@ impl std::str::FromStr for Algorithms {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        //let algorithm =
         match s.to_lowercase().as_str() {
             "sad" => Ok(Algorithms::SAD),
             "ssd" => Ok(Algorithms::SSD),
@@ -40,8 +39,6 @@ impl std::str::FromStr for Algorithms {
                     .to_string(),
             ),
         }
-
-        //Ok(algorithm)
     }
 }
 
@@ -216,13 +213,4 @@ fn main() {
     imageproc::contrast::equalize_histogram_mut(&mut output_image);
 
     assert!(output_image.save(output_filename).is_ok());
-
-    // assert!(image::save_buffer(
-    //     output_filename,
-    //     &output_vec,
-    //     image_width,
-    //     image_height,
-    //     image::ColorType::Gray(255),
-    // )
-    // .is_ok());
 }

@@ -3,11 +3,6 @@ use crate::common;
 
 // pub fn squared_difference<T: ops::Mul<Output = T> + ops::Sub<Output = T> + Copy>(a: T, b: T) -> T {
 //     (a - b) * (a - b)
-//}
-
-// pub fn absolute_difference<T: num_traits::sign::abs>(a: T, b: T) -> T {
-//     a.abs(b)
-// }
 
 pub fn absolute_difference_u8_to_f32(a: u8, b: u8) -> f32 {
     (f32::from(a) - f32::from(b)).abs()
@@ -27,7 +22,6 @@ where
             data.push(vec![T::default(); parameters.maximum_disparity as usize]);
         }
         for x in i64::from(parameters.maximum_disparity - 1)..i64::from(parameters.width) {
-            // let leftIdx = x + y * parameters.width;
             let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);
             for d in 0..i64::from(parameters.maximum_disparity) {
                 let data_cost = {

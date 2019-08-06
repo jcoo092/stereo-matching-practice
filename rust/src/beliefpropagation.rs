@@ -31,13 +31,6 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
     neighbour_vec
 }
 
-// fn normalise_cost_f32_vec(cost_vec: &mut Vec<f32>) {
-//     let average = common::compute_mean_of_f32_vec(cost_vec);
-//     for c in cost_vec {
-//         *c -= average;
-//     }
-// }
-
 fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
 where
     for<'x> T: std::ops::SubAssign
@@ -52,14 +45,6 @@ where
         *c -= mean;
     }
 }
-
-// fn normalise_all_messages_f32(message_vec: &mut Vec<Vec<Vec<f32>>>) {
-//     for v in message_vec.iter_mut() {
-//         for w in v.iter_mut() {
-//             normalise_cost_f32_vec(w);
-//         }
-//     }
-// }
 
 fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>)
 where
@@ -97,35 +82,21 @@ fn update_messages<
     for (i, m1) in messages1.iter().enumerate() {
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
-            // for neighbourhoods_index in 0..neighbourhoods[i].len() {
             for m1ni in m1.iter() {
                 *nms += data_costs[i][fp] + m1ni[fp];
             }
         }
         for (j, neighbour_index) in neighbourhoods[i].iter().enumerate() {
-            // let neighbour_costs = &m1[*neighbour_index];
-            // let index_in_neighbour = [*neighbour_index];
-            // let neighbour_costs = &m1[index_in_neighbour];
             let index_in_neighbour = neighbourhoods[*neighbour_index]
                 .iter()
                 .position(|x| *x == i)
                 .expect("Didn't find the current pixel in its neighbour's neighbourhood");
             let m2_neighbour_costs = &mut messages2[*neighbour_index][index_in_neighbour];
-            // for fq in 0..max_d {
-            //     // let mutable min_cost =
-            //     let min_cost = (0..max_d)
-            //         .map(|fp| {
-            //             smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - neighbour_costs[fp]
-            //         })
-            //         .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."));
-            //     m2_neighbour_costs[fq] = min_cost.unwrap(); // If this is ever empty, something has REALLY gone wrong
-            // }
             for (fq, m2nc) in m2_neighbour_costs.iter_mut().enumerate() {
                 let min_cost = (0..max_d)
                     .map(|fp| smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - m1[j][fp])
                     .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."))
                     .unwrap();
-                // m2_neighbour_costs[fq] = min_cost.unwrap(); // If this is ever empty, something has REALLY gone wrong
                 *m2nc = min_cost; // If this is ever empty, something has REALLY gone wrong
             }
         }
@@ -143,8 +114,6 @@ where
 {
     let mut beliefs: Vec<T> = Vec::with_capacity(max_d);
     for i in 0..max_d {
-        // let data_cost = &data_costs[pixel_index][i];
-        // let mut message_cost = T::default();
         let mut message_cost = data_costs[pixel_index][i];
         for neighbour_costs in pixel_messages {
             message_cost += neighbour_costs[i];
