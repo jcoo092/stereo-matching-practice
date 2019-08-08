@@ -35,25 +35,26 @@ where
 {
     let mut data = Vec::with_capacity(parameters.total_pixels as usize);
     for _y in 0..parameters.height {
-        for _x in 0..i64::from(parameters.maximum_disparity - 1) {
-            data.push(vec![T::default(); parameters.maximum_disparity as usize]);
-        }
-        for x in i64::from(parameters.maximum_disparity - 1)..i64::from(parameters.width) {
+        // for _x in 0..i64::from(parameters.maximum_disparity - 1) {
+        //     data.push(vec![T::default(); parameters.maximum_disparity as usize]);
+        // }
+        // for x in i64::from(parameters.maximum_disparity - 1)..i64::from(parameters.width) {
+        for x in 0..i64::from(parameters.width) {
             let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);
             for d in 0..i64::from(parameters.maximum_disparity) {
                 let data_cost = {
-                    // if (x - d) < 0 {
-                    //     data_cost_function(255u8, 0u8)
-                    // } else {
-                    //     data_cost_function(
-                    //         parameters.left_image[x as usize],
-                    //         parameters.right_image[(x - d) as usize],
-                    //     )
-                    // }
-                    data_cost_function(
-                        parameters.left_image[x as usize],
-                        parameters.right_image[(x - d) as usize],
-                    )
+                    if (x - d) < 0 {
+                        data_cost_function(255u8, 0u8)
+                    } else {
+                        data_cost_function(
+                            parameters.left_image[x as usize],
+                            parameters.right_image[(x - d) as usize],
+                        )
+                    }
+                    // data_cost_function(
+                    //     parameters.left_image[x as usize],
+                    //     parameters.right_image[(x - d) as usize],
+                    // )
                 };
                 current_pixel_data.push(data_cost);
             }

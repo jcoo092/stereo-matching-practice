@@ -166,6 +166,8 @@ fn main() {
     assert!(cli_parameters.output_directory.is_dir());
     let output_filename = determine_output_file_path(&cli_parameters);
 
+    let start_time = std::time::Instant::now();
+
     let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
 
     let (image_width, image_height) = left_image.dimensions();
@@ -185,6 +187,8 @@ fn main() {
         maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32u32),
         use_zero_mean: cli_parameters.use_zero_mean,
     };
+
+    let algo_start_time = std::time::Instant::now();
 
     let output_vec = {
         match cli_parameters.algorithm {
@@ -207,6 +211,8 @@ fn main() {
         }
     };
 
+    let algo_end_time = std::time::Instant::now();
+
     let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
         image_width,
         image_height,
@@ -216,4 +222,15 @@ fn main() {
     imageproc::contrast::equalize_histogram_mut(&mut output_image);
 
     assert!(output_image.save(output_filename).is_ok());
+
+    let end_time = std::time::Instant::now();
+
+    println!(
+        "Algorithm running time was {:?}.",
+        algo_end_time.duration_since(algo_start_time)
+    );
+    println!(
+        "Full running time was {:?}.",
+        end_time.duration_since(start_time)
+    );
 }

@@ -46,7 +46,7 @@ where
     }
 }
 
-fn normalise_all_messages<'b, T>(message_vec: &'b mut Vec<Vec<Vec<T>>>)
+fn normalise_all_messages<'b, T>(messages: &'b mut Vec<Vec<Vec<T>>>)
 where
     for<'x> T: Copy
         + num::traits::cast::FromPrimitive
@@ -55,8 +55,8 @@ where
         + num::traits::NumOps
         + num::traits::NumAssignOps,
 {
-    for v in message_vec.iter_mut() {
-        for w in v.iter_mut() {
+    for m in messages.iter_mut() {
+        for w in m.iter_mut() {
             normalise_cost_vec(w);
         }
     }
@@ -79,17 +79,31 @@ fn update_messages<
 ) {
     let max_d = parameters.maximum_disparity as usize;
     for (i, m1) in messages1.iter().enumerate() {
+        // let neighbour_message_sums_start = std::time::Instant::now();
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
             for m1ni in m1.iter() {
                 *nms += data_costs[i][fp] + m1ni[fp];
             }
         }
+        // let neighbour_message_sums_end = std::time::Instant::now();
+        // println!(
+        //     "data costs computation time took {:?}.",
+        //     neighbour_message_sums_end.duration_since(neighbour_message_sums_start)
+        // );
+
         for (j, neighbour_index) in neighbourhoods[i].iter().enumerate() {
+            // let index_in_neighbour_start = std::time::Instant::now();
             let index_in_neighbour = neighbourhoods[*neighbour_index]
                 .iter()
                 .position(|x| *x == i)
                 .expect("Didn't find the current pixel in its neighbour's neighbourhood");
+            // let index_in_neighbour_end = std::time::Instant::now();
+            // println!(
+            //     "index in neighbour computation time took {:?}.",
+            //     index_in_neighbour_end.duration_since(index_in_neighbour_start)
+            // );
+
             let m2_neighbour_costs = &mut messages2[*neighbour_index][index_in_neighbour];
             for (fq, m2nc) in m2_neighbour_costs.iter_mut().enumerate() {
                 let min_cost = (0..max_d)
@@ -139,10 +153,24 @@ where
         + num::traits::NumOps
         + num::traits::NumAssignOps,
 {
+    // let data_costs_start = std::time::Instant::now();
     let data_costs = data::compute_data_costs(&parameters, bpparameters.data_cost_function);
+    // let data_costs_end = std::time::Instant::now();
+    // println!(
+    //     "data costs computation time took {:?}.",
+    //     data_costs_end.duration_since(data_costs_start)
+    // );
+
+    // let smoothness_costs_start = std::time::Instant::now();
     let smoothness_costs =
         smoothness::compute_smoothness_costs(&parameters, bpparameters.smoothness_cost_function);
+    // let smoothness_costs_end = std::time::Instant::now();
+    // println!(
+    //     "smoothness costs computation time took {:?}.",
+    //     smoothness_costs_end.duration_since(smoothness_costs_start)
+    // );
 
+    // let neighbourhoods_start = std::time::Instant::now();
     let neighbourhoods = {
         let mut neighbour_vecs = vec![Vec::<usize>::new(); parameters.total_pixels as usize];
         for (i, v) in neighbour_vecs.iter_mut().enumerate() {
@@ -150,6 +178,14 @@ where
         }
         neighbour_vecs
     };
+    // let neighbourhoods_end = std::time::Instant::now();
+
+    // println!(
+    //     "neighbourhoods computation time took {:?}.",
+    //     neighbourhoods_end.duration_since(neighbourhoods_start)
+    // );
+
+    // let create_messages_start = std::time::Instant::now();
 
     let mut messages1 = (0..parameters.total_pixels as usize)
         .map(|i| {
@@ -163,7 +199,15 @@ where
 
     let mut messages2 = messages1.clone();
 
+    // let create_messages_end = std::time::Instant::now();
+
+    // println!(
+    //     "messages creation time took {:?}.",
+    //     create_messages_end.duration_since(create_messages_start)
+    // );
+
     for _i in 0..bpparameters.number_of_iterations {
+        // let update_messages_start = std::time::Instant::now();
         update_messages(
             parameters,
             &data_costs,
@@ -172,11 +216,31 @@ where
             &messages1,
             &mut messages2,
         );
-        normalise_all_messages(&mut messages2);
+        // let update_messages_end = std::time::Instant::now();
+        // println!(
+        //     "update messages computation time took {:?}.",
+        //     update_messages_end.duration_since(update_messages_start)
+        // );
 
+        // let normalise_messages_start = std::time::Instant::now();
+        normalise_all_messages(&mut messages2);
+        // let normalise_messages_end = std::time::Instant::now();
+        // println!(
+        //     "normalise messages computation time took {:?}.",
+        //     normalise_messages_end.duration_since(normalise_messages_start)
+        // );
+
+        // let swap_messages_start = std::time::Instant::now();
         std::mem::swap(&mut messages1, &mut messages2);
+        // let swap_messages_end = std::time::Instant::now();
+        // println!(
+        //     "normalise messages computation time took {:?}.",
+        //     swap_messages_end.duration_since(swap_messages_start)
+        // );
     }
 
+    // let final_disparities_start = std::time::Instant::now();
+    // let bob = messages1
     messages1
         .iter()
         .enumerate()
@@ -184,4 +248,10 @@ where
             compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
         })
         .collect()
+    // let final_disparities_end = std::time::Instant::now();
+    // println!(
+    //     "final disparities computation time took {:?}.",
+    //     final_disparities_end.duration_since(final_disparities_start)
+    // );
+    // bob
 }
