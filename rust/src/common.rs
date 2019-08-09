@@ -29,6 +29,19 @@ where
     sum / num::FromPrimitive::from_usize(input_vec.len()).unwrap()
 }
 
+// pub fn min_partial_ord<T>(input_vec: &[T]) -> T
+// where
+//     T: Copy + std::cmp::PartialOrd,
+// {
+//     *input_vec
+//         .iter()
+//         .min_by(|a, b| {
+//             a.partial_cmp(b)
+//                 .expect("Got an error in the min_by on min_partial_ord")
+//         })
+//         .expect("min_by option in min_partial_ord was None")
+// }
+
 pub fn argmin_of_vec<T>(input_vec: &[T]) -> usize
 where
     T: Copy + std::cmp::PartialOrd,

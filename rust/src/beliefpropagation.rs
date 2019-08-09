@@ -46,6 +46,19 @@ where
     }
 }
 
+// fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
+// where
+//     for<'x> T:
+//         Copy + num::traits::NumAssignOps + std::cmp::PartialOrd + num::traits::identities::Zero,
+// {
+//     let min = common::min_partial_ord(cost_vec);
+//     if min != T::zero() {
+//         for c in cost_vec.iter_mut() {
+//             *c /= min;
+//         }
+//     }
+// }
+
 fn normalise_all_messages<'b, T>(messages: &'b mut Vec<Vec<Vec<T>>>)
 where
     for<'x> T: Copy
@@ -53,13 +66,21 @@ where
         + num::traits::identities::Zero
         + std::iter::Sum<&'x T>
         + num::traits::NumOps
-        + num::traits::NumAssignOps,
+        + num::traits::NumAssignOps
+        + std::cmp::PartialOrd,
 {
     for m in messages.iter_mut() {
         for w in m.iter_mut() {
             normalise_cost_vec(w);
         }
     }
+}
+
+fn find_index_in_neighbour(this_index: usize, neighbourhood: &[usize]) -> usize {
+    neighbourhood
+        .iter()
+        .position(|x| *x == this_index)
+        .expect("Didn't find the current pixel in its neighbour's neighbourhood")
 }
 
 fn update_messages<
@@ -187,11 +208,7 @@ where
     // let create_messages_start = std::time::Instant::now();
     let mut messages1 = (0..parameters.total_pixels as usize)
         .map(|i| {
-            let this_pixels_neighbours = &neighbourhoods[i];
-            this_pixels_neighbours
-                .iter()
-                .map(|_| vec![T::default(); parameters.maximum_disparity as usize])
-                .collect::<Vec<_>>()
+            vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
         })
         .collect::<Vec<_>>();
 
@@ -256,9 +273,158 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::compute_neighbours;
+    use super::find_index_in_neighbour;
+    use super::normalise_cost_vec;
+    use crate::common;
 
     #[test]
+    #[ignore]
     fn test_compute_final_disparity_a() {
         unimplemented!();
+    }
+
+    #[test]
+    fn test_compute_neighbours_four_rows_three_columns_a() {
+        let params = common::Parameters {
+            left_image: &Vec::new(),
+            right_image: &Vec::new(),
+            width: 3,
+            height: 4,
+            total_pixels: 4 * 3,
+            window_edge_size: 3,
+            maximum_disparity: 2,
+            use_zero_mean: false,
+        };
+
+        let actual_neighbourhoods = (0..params.total_pixels as usize)
+            .map(|i| compute_neighbours(&params, i))
+            .collect::<Vec<_>>();
+
+        let expected_neighbourhoods = vec![
+            vec![1, 3],
+            vec![0, 2, 4],
+            vec![1, 5],
+            vec![0, 4, 6],
+            vec![1, 3, 5, 7],
+            vec![2, 4, 8],
+            vec![3, 7, 9],
+            vec![4, 6, 8, 10],
+            vec![5, 7, 11],
+            vec![6, 10],
+            vec![7, 9, 11],
+            vec![8, 10],
+        ];
+
+        assert_eq!(actual_neighbourhoods, expected_neighbourhoods);
+    }
+
+    #[test]
+    fn test_compute_neighbours_four_rows_three_columns_b() {
+        let params = common::Parameters {
+            left_image: &Vec::new(),
+            right_image: &Vec::new(),
+            width: 3,
+            height: 4,
+            total_pixels: 4 * 3,
+            window_edge_size: 3,
+            maximum_disparity: 2,
+            use_zero_mean: false,
+        };
+
+        let actual_neighbourhoods = {
+            let mut neighbour_vecs = vec![Vec::<usize>::new(); params.total_pixels as usize];
+            for (i, v) in neighbour_vecs.iter_mut().enumerate() {
+                *v = compute_neighbours(&params, i)
+            }
+            neighbour_vecs
+        };
+
+        let expected_neighbourhoods = vec![
+            vec![1, 3],
+            vec![0, 2, 4],
+            vec![1, 5],
+            vec![0, 4, 6],
+            vec![1, 3, 5, 7],
+            vec![2, 4, 8],
+            vec![3, 7, 9],
+            vec![4, 6, 8, 10],
+            vec![5, 7, 11],
+            vec![6, 10],
+            vec![7, 9, 11],
+            vec![8, 10],
+        ];
+
+        assert_eq!(actual_neighbourhoods, expected_neighbourhoods);
+    }
+
+    // #[test]
+    // fn test_normalise_cost_vec_f32_one_to_five_ascending() {
+    //     let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+    //     normalise_cost_vec(&mut test_vec);
+    //     let expected_result: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5]
+    //         .iter()
+    //         .map(|x| *x - 3.3)
+    //         .collect();
+    //     // let result = (mean - 3.3f32).abs();
+    //     assert_eq!(test_vec, expected_result);
+    // }
+
+    #[test]
+    fn test_normalise_cost_vec_f32_one_to_five_ascending() {
+        let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+        normalise_cost_vec(&mut test_vec);
+        let expected_result: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5]
+            .iter()
+            .map(|x| *x - 3.3)
+            .collect();
+        // let result = (mean - 3.3f32).abs();
+        assert_eq!(test_vec, expected_result);
+    }
+
+    #[test]
+    fn test_find_index_in_neighbour_four_rows_three_columns() {
+        let params = common::Parameters {
+            left_image: &Vec::new(),
+            right_image: &Vec::new(),
+            width: 3,
+            height: 4,
+            total_pixels: 4 * 3,
+            window_edge_size: 3,
+            maximum_disparity: 2,
+            use_zero_mean: false,
+        };
+
+        let actual_neighbourhoods = (0..params.total_pixels as usize)
+            .map(|i| compute_neighbours(&params, i))
+            .collect::<Vec<_>>();
+
+        let actual_indices: Vec<Vec<usize>> = actual_neighbourhoods
+            .iter()
+            .enumerate()
+            .map(|(i, neighbourhood)| {
+                neighbourhood
+                    .iter()
+                    .map(|j| find_index_in_neighbour(i, &actual_neighbourhoods[*j]))
+                    .collect()
+            })
+            .collect();
+
+        let expected_indices = vec![
+            vec![0, 0],
+            vec![0, 0, 0],
+            vec![1, 0],
+            vec![1, 1, 0],
+            vec![2, 1, 1, 0],
+            vec![1, 2, 0],
+            vec![2, 1, 0],
+            vec![3, 1, 1, 0],
+            vec![2, 2, 0],
+            vec![2, 1],
+            vec![3, 1, 1],
+            vec![2, 2],
+        ];
+
+        assert_eq!(actual_indices, expected_indices);
     }
 }
