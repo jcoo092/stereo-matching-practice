@@ -49,6 +49,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::argmin_of_vec;
     use super::compute_mean_of_vec;
     #[test]
     fn test_compute_mean_of_vec_f32_five_fives() {
@@ -56,5 +57,34 @@ mod tests {
         let mean = compute_mean_of_vec(&test_vec);
         let result = (mean - 5.0f32).abs();
         assert!(result <= std::f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_mean_of_vec_f32_one_to_five_ascending() {
+        let test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+        let mean = compute_mean_of_vec(&test_vec);
+        let result = (mean - 3.3f32).abs();
+        assert!(result <= std::f32::EPSILON);
+    }
+
+    #[test]
+    fn test_argmin_of_vec_f32_five_to_one_descending() {
+        let test_vec: Vec<f32> = vec![5.5, 4.4, 3.3, 2.2, 1.1];
+        let result = argmin_of_vec(&test_vec);
+        assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn test_argmin_of_vec_f32_one_to_five_ascending() {
+        let test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+        let result = argmin_of_vec(&test_vec);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_argmin_of_vec_f32_five_to_one_jumbled() {
+        let test_vec: Vec<f32> = vec![3.3, 5.5, 1.1, 2.2, 4.4];
+        let result = argmin_of_vec(&test_vec);
+        assert_eq!(result, 2);
     }
 }

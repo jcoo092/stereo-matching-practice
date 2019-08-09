@@ -179,14 +179,12 @@ where
         neighbour_vecs
     };
     // let neighbourhoods_end = std::time::Instant::now();
-
     // println!(
     //     "neighbourhoods computation time took {:?}.",
     //     neighbourhoods_end.duration_since(neighbourhoods_start)
     // );
 
     // let create_messages_start = std::time::Instant::now();
-
     let mut messages1 = (0..parameters.total_pixels as usize)
         .map(|i| {
             let this_pixels_neighbours = &neighbourhoods[i];
@@ -198,9 +196,7 @@ where
         .collect::<Vec<_>>();
 
     let mut messages2 = messages1.clone();
-
     // let create_messages_end = std::time::Instant::now();
-
     // println!(
     //     "messages creation time took {:?}.",
     //     create_messages_end.duration_since(create_messages_start)
@@ -232,6 +228,7 @@ where
 
         // let swap_messages_start = std::time::Instant::now();
         std::mem::swap(&mut messages1, &mut messages2);
+        // messages2 = std::mem::replace(&mut messages1, messages2);
         // let swap_messages_end = std::time::Instant::now();
         // println!(
         //     "normalise messages computation time took {:?}.",
@@ -241,6 +238,7 @@ where
 
     // let final_disparities_start = std::time::Instant::now();
     // let bob = messages1
+
     messages1
         .iter()
         .enumerate()
@@ -254,4 +252,13 @@ where
     //     final_disparities_end.duration_since(final_disparities_start)
     // );
     // bob
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_compute_final_disparity_a() {
+        unimplemented!();
+    }
 }

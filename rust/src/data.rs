@@ -63,3 +63,37 @@ where
     }
     data
 }
+
+#[cfg(test)]
+mod tests {
+    use super::truncated_linear_f32_fh;
+    use crate::common;
+
+    #[test]
+    fn test_truncated_linear_two_ones() {
+        let computation = truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, 1, 1);
+        let result = (computation - 0.0f32).abs();
+        assert!(result <= std::f32::EPSILON);
+    }
+
+    #[test]
+    fn test_truncated_linear_one_zero() {
+        let computation = truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, 1, 0);
+        let result = (computation - common::LAMBDA_FH).abs();
+        assert!(result <= std::f32::EPSILON);
+    }
+
+    #[test]
+    fn test_truncated_linear_two_hundred_fifty_five_one() {
+        let computation = truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, 255, 1);
+        let result = (computation - (common::LAMBDA_FH * common::TAU_FH)).abs();
+        assert!(result <= std::f32::EPSILON);
+    }
+
+    #[test]
+    fn test_truncated_linear_two_hundred_fifty_five_zero() {
+        let computation = truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, 255, 0);
+        let result = (computation - (common::LAMBDA_FH * common::TAU_FH)).abs();
+        assert!(result <= std::f32::EPSILON);
+    }
+}
