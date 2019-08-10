@@ -162,6 +162,10 @@ fn determine_output_file_path(params: &CLIParameters) -> PathBuf {
 }
 
 fn main() {
+    // let args: Vec<_> = std::env::args().collect();
+    // for a in args.iter() {
+    //     dbg!(a);
+    // }
     let cli_parameters = CLIParameters::from_args();
     assert!(cli_parameters.output_directory.is_dir());
     let output_filename = determine_output_file_path(&cli_parameters);
@@ -185,6 +189,7 @@ fn main() {
         total_pixels: image_width * image_height,
         window_edge_size: cli_parameters.window_size.unwrap_or(3u32),
         maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32u32),
+        // maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(16u32),
         use_zero_mean: cli_parameters.use_zero_mean,
     };
 
@@ -198,12 +203,12 @@ fn main() {
             Algorithms::BeliefPropagation => {
                 let bpparameters = beliefpropagation::BPParameters {
                     number_of_iterations: cli_parameters.number_of_iterations.unwrap_or(10u32),
-                    // data_cost_function: data::absolute_difference_u8_to_f32,
+                    // number_of_iterations: cli_parameters.number_of_iterations.unwrap_or(2u32),
                     data_cost_function: |a, b| {
                         data::truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, a, b)
                     },
-                    smoothness_cost_function: |x, y| {
-                        smoothness::truncated_linear_f32_fh(common::D_FH, x, y)
+                    smoothness_cost_function: |a, b| {
+                        smoothness::truncated_linear_f32_fh(common::D_FH, a, b)
                     },
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)

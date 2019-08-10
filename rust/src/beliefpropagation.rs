@@ -76,6 +76,8 @@ where
     }
 }
 
+// #[allow(dead_code)]
+// #[cfg(test)]
 fn find_index_in_neighbour(this_index: usize, neighbourhood: &[usize]) -> usize {
     neighbourhood
         .iter()
@@ -115,10 +117,11 @@ fn update_messages<
 
         for (j, neighbour_index) in neighbourhoods[i].iter().enumerate() {
             // let index_in_neighbour_start = std::time::Instant::now();
-            let index_in_neighbour = neighbourhoods[*neighbour_index]
-                .iter()
-                .position(|x| *x == i)
-                .expect("Didn't find the current pixel in its neighbour's neighbourhood");
+            // let index_in_neighbour = neighbourhoods[*neighbour_index]
+            //     .iter()
+            //     .position(|x| *x == i)
+            //     .expect("Didn't find the current pixel in its neighbour's neighbourhood");
+            let index_in_neighbour = find_index_in_neighbour(i, &neighbourhoods[*neighbour_index]);
             // let index_in_neighbour_end = std::time::Instant::now();
             // println!(
             //     "index in neighbour computation time took {:?}.",
@@ -130,8 +133,8 @@ fn update_messages<
                 let min_cost = (0..max_d)
                     .map(|fp| smoothness_costs[fp][fq] + neighbour_messages_sums[fp] - m1[j][fp])
                     .min_by(|a, b| a.partial_cmp(b).expect("Found a NaN in this vector..."))
-                    .unwrap();
-                *m2nc = min_cost; // If this is ever empty, something has REALLY gone wrong
+                    .unwrap(); // If this is ever empty, something has REALLY gone wrong
+                *m2nc = min_cost;
             }
         }
     }
@@ -172,7 +175,8 @@ where
         + num::traits::identities::Zero
         + std::iter::Sum<&'x T>
         + num::traits::NumOps
-        + num::traits::NumAssignOps,
+        + num::traits::NumAssignOps
+        + std::fmt::Debug,
 {
     // let data_costs_start = std::time::Instant::now();
     let data_costs = data::compute_data_costs(&parameters, bpparameters.data_cost_function);
@@ -235,6 +239,10 @@ where
         //     update_messages_end.duration_since(update_messages_start)
         // );
 
+        // for m in messages2.iter().skip(60000).take(2) {
+        //     println!("messages2 pre-normalisation: {:?}", m);
+        // }
+
         // let normalise_messages_start = std::time::Instant::now();
         normalise_all_messages(&mut messages2);
         // let normalise_messages_end = std::time::Instant::now();
@@ -242,6 +250,10 @@ where
         //     "normalise messages computation time took {:?}.",
         //     normalise_messages_end.duration_since(normalise_messages_start)
         // );
+
+        // for m in messages2.iter().skip(60000).take(2) {
+        //     println!("messages2 post-normalisation: {:?}", m);
+        // }
 
         // let swap_messages_start = std::time::Instant::now();
         std::mem::swap(&mut messages1, &mut messages2);
@@ -254,8 +266,6 @@ where
     }
 
     // let final_disparities_start = std::time::Instant::now();
-    // let bob = messages1
-
     messages1
         .iter()
         .enumerate()
@@ -268,7 +278,6 @@ where
     //     "final disparities computation time took {:?}.",
     //     final_disparities_end.duration_since(final_disparities_start)
     // );
-    // bob
 }
 
 #[cfg(test)]
@@ -277,12 +286,56 @@ mod tests {
     use super::find_index_in_neighbour;
     use super::normalise_cost_vec;
     use crate::common;
+    // use std::convert::TryInto;
 
-    #[test]
-    #[ignore]
-    fn test_compute_final_disparity_a() {
-        unimplemented!();
-    }
+    // #[test]
+    // fn test_compute_final_disparity_a() {
+    //     let sample_costs = [[
+    //         [
+    //             -1.548_749_9,
+    //             -0.5687499,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //             0.15125012,
+    //         ],
+    //         [
+    //             -1.5499998,
+    //             -0.54999983,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.150_000_21,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //             0.15000021,
+    //         ],
+    //     ]];
+    //     let actual_result = sample_costs
+    //     .iter()
+    //     .enumerate()
+    //     .map(|(i, p)| {
+    //         compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
+    //     })
+    //     .collect()
+    // }
 
     #[test]
     fn test_compute_neighbours_four_rows_three_columns_a() {

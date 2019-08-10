@@ -1,9 +1,13 @@
-// use num::traits::NumOps;
 use crate::common;
-// use std::ops;
 
-// pub fn squared_difference<T: ops::Mul<Output = T> + ops::Sub<Output = T> + Copy>(a: T, b: T) -> T {
-//     (a - b) * (a - b)
+#[allow(dead_code)]
+#[cfg(test)]
+pub fn squared_difference<T: std::ops::Mul<Output = T> + std::ops::Sub<Output = T> + Copy>(
+    a: T,
+    b: T,
+) -> T {
+    (a - b) * (a - b)
+}
 
 pub fn absolute_difference_u8_to_f32(a: u8, b: u8) -> f32 {
     (f32::from(a) - f32::from(b)).abs()
@@ -13,16 +17,21 @@ pub fn truncated_linear_f32_fh(lambda: f32, tau: f32, a: u8, b: u8) -> f32 {
     lambda * f32::min(tau, absolute_difference_u8_to_f32(a, b))
 }
 
-// pub fn truncated_linear_FH<T>(lambda : T, tau : T, a : &u8, b : &u8) -> T where T: NumOps + PartialOrd {
-//     // lambda * T::min(tau, (num::FromPrimitive::from_u8(*a).unwrap() - num::FromPrimitive::from_u8(*b).unwrap()).abs());
-//     let ab_abs : T = (num::FromPrimitive::from_u8(*a).unwrap() - num::FromPrimitive::from_u8(*b).unwrap()).abs();
-//     let this_min = if tau < ab_abs {
-//         tau
-//     } else {
-//         ab_abs
-//     };
-//     lambda * this_min
-// }
+#[allow(dead_code)]
+#[cfg(test)]
+pub fn truncated_linear_fh<T>(lambda: T, tau: T, a: u8, b: u8) -> T
+where
+    T: num::traits::NumOps + PartialOrd + num::FromPrimitive + num::Signed,
+{
+    // lambda * T::min(tau, (num::FromPrimitive::from_u8(*a).unwrap() - num::FromPrimitive::from_u8(*b).unwrap()).abs());
+    let a_t: T = num::FromPrimitive::from_u8(a).unwrap();
+    let b_t: T = num::FromPrimitive::from_u8(b).unwrap();
+    // let ab_abs: T =
+    //     (num::FromPrimitive::from_u8(*a).unwrap() - num::FromPrimitive::from_u8(*b).unwrap()).abs();
+    let ab_abs = (a_t - b_t).abs();
+    let this_min = if tau < ab_abs { tau } else { ab_abs };
+    lambda * this_min
+}
 
 pub fn compute_data_costs<T, F>(
     parameters: &common::Parameters,
