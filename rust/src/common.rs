@@ -49,7 +49,7 @@ pub fn blend_images(params: &Parameters) -> std::vec::Vec<u8> {
 #[cfg(test)]
 pub fn min_partial_ord<T>(input_vec: &[T]) -> T
 where
-    T: Copy + std::cmp::PartialOrd,
+    T: Copy + PartialOrd,
 {
     *input_vec
         .iter()
@@ -62,7 +62,7 @@ where
 
 pub fn argmin_of_vec<T>(input_vec: &[T]) -> usize
 where
-    T: Copy + std::cmp::PartialOrd,
+    T: Copy + PartialOrd,
 {
     let first_value = input_vec[0];
     let (result_index, _) = input_vec.iter().enumerate().fold(

@@ -49,7 +49,7 @@ where
 // fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
 // where
 //     for<'x> T:
-//         Copy + num::traits::NumAssignOps + std::cmp::PartialOrd + num::traits::identities::Zero,
+//         Copy + num::traits::NumAssignOps + PartialOrd + num::traits::identities::Zero,
 // {
 //     let min = common::min_partial_ord(cost_vec);
 //     if min != T::zero() {
@@ -67,7 +67,7 @@ where
         + std::iter::Sum<&'x T>
         + num::traits::NumOps
         + num::traits::NumAssignOps
-        + std::cmp::PartialOrd,
+        + PartialOrd,
 {
     for m in messages.iter_mut() {
         for w in m.iter_mut() {
@@ -86,12 +86,7 @@ fn find_index_in_neighbour(this_index: usize, neighbourhood: &[usize]) -> usize 
 }
 
 fn update_messages<
-    T: std::default::Default
-        + std::clone::Clone
-        + Copy
-        + std::cmp::PartialOrd
-        + num::traits::NumOps
-        + num::traits::NumAssignOps,
+    T: Default + Clone + Copy + PartialOrd + num::traits::NumOps + num::traits::NumAssignOps,
 >(
     parameters: &common::Parameters,
     data_costs: &[Vec<T>],
@@ -147,7 +142,7 @@ fn compute_final_disparity<T>(
     pixel_messages: &[Vec<T>],
 ) -> u8
 where
-    T: std::default::Default + std::ops::AddAssign + Copy + std::cmp::PartialOrd,
+    T: Default + std::ops::AddAssign + Copy + PartialOrd,
 {
     let mut beliefs: Vec<T> = Vec::with_capacity(max_d);
     for i in 0..max_d {
@@ -167,10 +162,9 @@ pub fn belief_propagation<'c, T>(
 ) -> Vec<u8>
 where
     for<'x> T: 'c
-        + std::default::Default
-        + std::clone::Clone
+        + Default
         + Copy
-        + std::cmp::PartialOrd
+        + PartialOrd
         + num::traits::cast::FromPrimitive
         + num::traits::identities::Zero
         + std::iter::Sum<&'x T>
@@ -215,8 +209,34 @@ where
             vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
         })
         .collect::<Vec<_>>();
+    // let mut messages1 = {
+    //     let mut init = Vec::with_capacity(parameters.total_pixels as usize);
+    //     for i in 0..parameters.total_pixels as usize {
+    //         let neighbourhoods_len = neighbourhoods[i].len();
+    //         let mut neighbours_vec = Vec::with_capacity(neighbourhoods_len);
+    //         for _j in 0..neighbourhoods_len {
+    //             let disps_vec = vec![T::default(); parameters.maximum_disparity as usize];
+    //             neighbours_vec.push(disps_vec);
+    //         }
+    //         init.push(neighbours_vec);
+    //     }
 
-    let mut messages2 = messages1.clone();
+    // (0..parameters.total_pixels as usize)
+    // .map(|i| {
+    //     vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
+    // })
+    // .collect::<Vec<_>>()
+    //     init
+    // };
+
+    let mut messages2: Vec<Vec<Vec<T>>> = messages1.clone();
+    // let mut messages2 : Vec<Vec<Vec<T>>>;
+    // messages2.copy_from_slice(&messages1);
+    // let mut messages2 = (0..parameters.total_pixels as usize)
+    //     .map(|i| {
+    //         vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
+    //     })
+    //     .collect::<Vec<_>>();
     // let create_messages_end = std::time::Instant::now();
     // println!(
     //     "messages creation time took {:?}.",

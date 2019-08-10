@@ -39,8 +39,8 @@ pub fn compute_data_costs<T, F>(
 ) -> Vec<Vec<T>>
 where
     F: Fn(u8, u8) -> T,
-    // T: std::default::Default + Clone,
-    T: std::default::Default + Copy,
+    // T: Default + Clone,
+    T: Default + Copy,
 {
     let mut data = Vec::with_capacity(parameters.total_pixels as usize);
     for _y in 0..parameters.height {
