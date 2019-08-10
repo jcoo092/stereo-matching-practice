@@ -15,9 +15,6 @@ pub const TAU_FH: f32 = 15.0;
 pub const D_FH: f32 = 1.7;
 
 // Blatantly stolen from StackOverflow...  unfortunately I have lost track of precisely where...
-// pub fn compute_mean_of_vec<'g, T>(input_vec: &'g Vec<T>) -> T
-// #[allow(dead_code)]
-// #[cfg(test)]
 pub fn compute_mean_of_vec<T>(input_vec: &[T]) -> T
 where
     for<'x> T: Copy
@@ -29,35 +26,6 @@ where
 {
     let sum: T = input_vec.iter().sum();
     sum / num::FromPrimitive::from_usize(input_vec.len()).unwrap()
-}
-
-#[allow(dead_code)]
-#[cfg(test)]
-pub fn blend_images(params: &Parameters) -> std::vec::Vec<u8> {
-    let mut output_image = vec![0; params.total_pixels as usize];
-    for (i, p) in output_image.iter_mut().enumerate() {
-        if i % 2 == 0 {
-            *p = params.left_image[i];
-        } else {
-            *p = params.right_image[i];
-        }
-    }
-    output_image
-}
-
-#[allow(dead_code)]
-#[cfg(test)]
-pub fn min_partial_ord<T>(input_vec: &[T]) -> T
-where
-    T: Copy + PartialOrd,
-{
-    *input_vec
-        .iter()
-        .min_by(|a, b| {
-            a.partial_cmp(b)
-                .expect("Got an error in the min_by on min_partial_ord")
-        })
-        .expect("min_by option in min_partial_ord was None")
 }
 
 pub fn argmin_of_vec<T>(input_vec: &[T]) -> usize

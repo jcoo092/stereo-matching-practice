@@ -46,19 +46,6 @@ where
     }
 }
 
-// fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
-// where
-//     for<'x> T:
-//         Copy + num::traits::NumAssignOps + PartialOrd + num::traits::identities::Zero,
-// {
-//     let min = common::min_partial_ord(cost_vec);
-//     if min != T::zero() {
-//         for c in cost_vec.iter_mut() {
-//             *c /= min;
-//         }
-//     }
-// }
-
 fn normalise_all_messages<'b, T>(messages: &'b mut Vec<Vec<Vec<T>>>)
 where
     for<'x> T: Copy
@@ -76,8 +63,6 @@ where
     }
 }
 
-// #[allow(dead_code)]
-// #[cfg(test)]
 fn find_index_in_neighbour(this_index: usize, neighbourhood: &[usize]) -> usize {
     neighbourhood
         .iter()
@@ -97,31 +82,15 @@ fn update_messages<
 ) {
     let max_d = parameters.maximum_disparity as usize;
     for (i, m1) in messages1.iter().enumerate() {
-        // let neighbour_message_sums_start = std::time::Instant::now();
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
             for m1ni in m1.iter() {
                 *nms += data_costs[i][fp] + m1ni[fp];
             }
         }
-        // let neighbour_message_sums_end = std::time::Instant::now();
-        // println!(
-        //     "data costs computation time took {:?}.",
-        //     neighbour_message_sums_end.duration_since(neighbour_message_sums_start)
-        // );
 
         for (j, neighbour_index) in neighbourhoods[i].iter().enumerate() {
-            // let index_in_neighbour_start = std::time::Instant::now();
-            // let index_in_neighbour = neighbourhoods[*neighbour_index]
-            //     .iter()
-            //     .position(|x| *x == i)
-            //     .expect("Didn't find the current pixel in its neighbour's neighbourhood");
             let index_in_neighbour = find_index_in_neighbour(i, &neighbourhoods[*neighbour_index]);
-            // let index_in_neighbour_end = std::time::Instant::now();
-            // println!(
-            //     "index in neighbour computation time took {:?}.",
-            //     index_in_neighbour_end.duration_since(index_in_neighbour_start)
-            // );
 
             let m2_neighbour_costs = &mut messages2[*neighbour_index][index_in_neighbour];
             for (fq, m2nc) in m2_neighbour_costs.iter_mut().enumerate() {
@@ -172,24 +141,11 @@ where
         + num::traits::NumAssignOps
         + std::fmt::Debug,
 {
-    // let data_costs_start = std::time::Instant::now();
     let data_costs = data::compute_data_costs(&parameters, bpparameters.data_cost_function);
-    // let data_costs_end = std::time::Instant::now();
-    // println!(
-    //     "data costs computation time took {:?}.",
-    //     data_costs_end.duration_since(data_costs_start)
-    // );
 
-    // let smoothness_costs_start = std::time::Instant::now();
     let smoothness_costs =
         smoothness::compute_smoothness_costs(&parameters, bpparameters.smoothness_cost_function);
-    // let smoothness_costs_end = std::time::Instant::now();
-    // println!(
-    //     "smoothness costs computation time took {:?}.",
-    //     smoothness_costs_end.duration_since(smoothness_costs_start)
-    // );
 
-    // let neighbourhoods_start = std::time::Instant::now();
     let neighbourhoods = {
         let mut neighbour_vecs = vec![Vec::<usize>::new(); parameters.total_pixels as usize];
         for (i, v) in neighbour_vecs.iter_mut().enumerate() {
@@ -197,54 +153,16 @@ where
         }
         neighbour_vecs
     };
-    // let neighbourhoods_end = std::time::Instant::now();
-    // println!(
-    //     "neighbourhoods computation time took {:?}.",
-    //     neighbourhoods_end.duration_since(neighbourhoods_start)
-    // );
 
-    // let create_messages_start = std::time::Instant::now();
     let mut messages1 = (0..parameters.total_pixels as usize)
         .map(|i| {
             vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
         })
         .collect::<Vec<_>>();
-    // let mut messages1 = {
-    //     let mut init = Vec::with_capacity(parameters.total_pixels as usize);
-    //     for i in 0..parameters.total_pixels as usize {
-    //         let neighbourhoods_len = neighbourhoods[i].len();
-    //         let mut neighbours_vec = Vec::with_capacity(neighbourhoods_len);
-    //         for _j in 0..neighbourhoods_len {
-    //             let disps_vec = vec![T::default(); parameters.maximum_disparity as usize];
-    //             neighbours_vec.push(disps_vec);
-    //         }
-    //         init.push(neighbours_vec);
-    //     }
-
-    // (0..parameters.total_pixels as usize)
-    // .map(|i| {
-    //     vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
-    // })
-    // .collect::<Vec<_>>()
-    //     init
-    // };
 
     let mut messages2: Vec<Vec<Vec<T>>> = messages1.clone();
-    // let mut messages2 : Vec<Vec<Vec<T>>>;
-    // messages2.copy_from_slice(&messages1);
-    // let mut messages2 = (0..parameters.total_pixels as usize)
-    //     .map(|i| {
-    //         vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
-    //     })
-    //     .collect::<Vec<_>>();
-    // let create_messages_end = std::time::Instant::now();
-    // println!(
-    //     "messages creation time took {:?}.",
-    //     create_messages_end.duration_since(create_messages_start)
-    // );
 
     for _i in 0..bpparameters.number_of_iterations {
-        // let update_messages_start = std::time::Instant::now();
         update_messages(
             parameters,
             &data_costs,
@@ -253,39 +171,12 @@ where
             &messages1,
             &mut messages2,
         );
-        // let update_messages_end = std::time::Instant::now();
-        // println!(
-        //     "update messages computation time took {:?}.",
-        //     update_messages_end.duration_since(update_messages_start)
-        // );
 
-        // for m in messages2.iter().skip(60000).take(2) {
-        //     println!("messages2 pre-normalisation: {:?}", m);
-        // }
-
-        // let normalise_messages_start = std::time::Instant::now();
         normalise_all_messages(&mut messages2);
-        // let normalise_messages_end = std::time::Instant::now();
-        // println!(
-        //     "normalise messages computation time took {:?}.",
-        //     normalise_messages_end.duration_since(normalise_messages_start)
-        // );
 
-        // for m in messages2.iter().skip(60000).take(2) {
-        //     println!("messages2 post-normalisation: {:?}", m);
-        // }
-
-        // let swap_messages_start = std::time::Instant::now();
         std::mem::swap(&mut messages1, &mut messages2);
-        // messages2 = std::mem::replace(&mut messages1, messages2);
-        // let swap_messages_end = std::time::Instant::now();
-        // println!(
-        //     "normalise messages computation time took {:?}.",
-        //     swap_messages_end.duration_since(swap_messages_start)
-        // );
     }
 
-    // let final_disparities_start = std::time::Instant::now();
     messages1
         .iter()
         .enumerate()
@@ -293,11 +184,6 @@ where
             compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
         })
         .collect()
-    // let final_disparities_end = std::time::Instant::now();
-    // println!(
-    //     "final disparities computation time took {:?}.",
-    //     final_disparities_end.duration_since(final_disparities_start)
-    // );
 }
 
 #[cfg(test)]
@@ -306,56 +192,6 @@ mod tests {
     use super::find_index_in_neighbour;
     use super::normalise_cost_vec;
     use crate::common;
-    // use std::convert::TryInto;
-
-    // #[test]
-    // fn test_compute_final_disparity_a() {
-    //     let sample_costs = [[
-    //         [
-    //             -1.548_749_9,
-    //             -0.5687499,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //             0.15125012,
-    //         ],
-    //         [
-    //             -1.5499998,
-    //             -0.54999983,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.150_000_21,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //             0.15000021,
-    //         ],
-    //     ]];
-    //     let actual_result = sample_costs
-    //     .iter()
-    //     .enumerate()
-    //     .map(|(i, p)| {
-    //         compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
-    //     })
-    //     .collect()
-    // }
 
     #[test]
     fn test_compute_neighbours_four_rows_three_columns_a() {
@@ -431,18 +267,6 @@ mod tests {
         assert_eq!(actual_neighbourhoods, expected_neighbourhoods);
     }
 
-    // #[test]
-    // fn test_normalise_cost_vec_f32_one_to_five_ascending() {
-    //     let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
-    //     normalise_cost_vec(&mut test_vec);
-    //     let expected_result: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5]
-    //         .iter()
-    //         .map(|x| *x - 3.3)
-    //         .collect();
-    //     // let result = (mean - 3.3f32).abs();
-    //     assert_eq!(test_vec, expected_result);
-    // }
-
     #[test]
     fn test_normalise_cost_vec_f32_one_to_five_ascending() {
         let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
@@ -451,7 +275,6 @@ mod tests {
             .iter()
             .map(|x| *x - 3.3)
             .collect();
-        // let result = (mean - 3.3f32).abs();
         assert_eq!(test_vec, expected_result);
     }
 
