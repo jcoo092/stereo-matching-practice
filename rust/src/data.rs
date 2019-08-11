@@ -16,18 +16,19 @@ where
     F: Fn(u8, u8) -> T,
     T: Default + Copy,
 {
-    let mut data = Vec::with_capacity(parameters.total_pixels as usize);
-    for _y in 0..parameters.height {
-        for x in 0..i64::from(parameters.width) {
-            let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity as usize);
-            for d in 0..i64::from(parameters.maximum_disparity) {
+    let mut data = Vec::with_capacity(parameters.total_pixels);
+    for y in 0..parameters.height {
+        for x in 0..(parameters.width) {
+            let pixel_index = (x as usize) + (y as usize) * parameters.width;
+            let mut current_pixel_data = Vec::with_capacity(parameters.maximum_disparity);
+            for d in 0..(parameters.maximum_disparity) {
                 let data_cost = {
-                    if (x - d) < 0 {
+                    if (x as i64 - d as i64) < 0 {
                         data_cost_function(255u8, 0u8)
                     } else {
                         data_cost_function(
-                            parameters.left_image[x as usize],
-                            parameters.right_image[(x - d) as usize],
+                            parameters.left_image[pixel_index],
+                            parameters.right_image[(pixel_index - d)],
                         )
                     }
                 };

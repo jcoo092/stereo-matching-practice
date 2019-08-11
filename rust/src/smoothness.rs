@@ -1,6 +1,6 @@
 use crate::common;
 
-pub fn truncated_linear_f32_fh(d: f32, a: u32, b: u32) -> f32 {
+pub fn truncated_linear_f32_fh(d: f32, a: usize, b: usize) -> f32 {
     f32::min((a as i32 - b as i32).abs() as f32, d)
 }
 
@@ -9,11 +9,11 @@ pub fn compute_smoothness_costs<T, F>(
     smoothness_cost_function: F,
 ) -> Vec<Vec<T>>
 where
-    F: Fn(u32, u32) -> T,
+    F: Fn(usize, usize) -> T,
 {
-    let mut smoothness_costs = Vec::with_capacity(parameters.maximum_disparity as usize);
+    let mut smoothness_costs = Vec::with_capacity(parameters.maximum_disparity);
     for y in 0..parameters.maximum_disparity {
-        let mut this_row = Vec::with_capacity(parameters.maximum_disparity as usize);
+        let mut this_row = Vec::with_capacity(parameters.maximum_disparity);
         for x in 0..parameters.maximum_disparity {
             this_row.push(smoothness_cost_function(x, y));
         }

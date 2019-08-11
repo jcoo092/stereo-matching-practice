@@ -4,13 +4,13 @@ use crate::smoothness;
 use std::convert::TryInto;
 
 pub struct BPParameters<T> {
-    pub number_of_iterations: u32,
+    pub number_of_iterations: usize,
     pub data_cost_function: fn(u8, u8) -> T,
-    pub smoothness_cost_function: fn(u32, u32) -> T,
+    pub smoothness_cost_function: fn(usize, usize) -> T,
 }
 
 fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usize> {
-    let usize_width = parameters.width as usize;
+    let usize_width = parameters.width;
     let x = index % usize_width;
     let y = index / usize_width;
 
@@ -24,7 +24,7 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
     if x < (usize_width - 1) {
         neighbour_vec.push(index + 1);
     }
-    if y < (parameters.height as usize - 1) {
+    if y < (parameters.height - 1) {
         neighbour_vec.push(index + usize_width);
     }
 
@@ -80,7 +80,7 @@ fn update_messages<
     messages1: &[Vec<Vec<T>>],
     messages2: &mut Vec<Vec<Vec<T>>>,
 ) {
-    let max_d = parameters.maximum_disparity as usize;
+    let max_d = parameters.maximum_disparity;
     for (i, m1) in messages1.iter().enumerate() {
         let mut neighbour_messages_sums = vec![T::default(); max_d];
         for (fp, nms) in neighbour_messages_sums.iter_mut().enumerate() {
@@ -147,16 +147,16 @@ where
         smoothness::compute_smoothness_costs(&parameters, bpparameters.smoothness_cost_function);
 
     let neighbourhoods = {
-        let mut neighbour_vecs = vec![Vec::<usize>::new(); parameters.total_pixels as usize];
+        let mut neighbour_vecs = vec![Vec::<usize>::new(); parameters.total_pixels];
         for (i, v) in neighbour_vecs.iter_mut().enumerate() {
             *v = compute_neighbours(&parameters, i)
         }
         neighbour_vecs
     };
 
-    let mut messages1 = (0..parameters.total_pixels as usize)
+    let mut messages1 = (0..parameters.total_pixels)
         .map(|i| {
-            vec![vec![T::default(); parameters.maximum_disparity as usize]; neighbourhoods[i].len()]
+            vec![vec![T::default(); parameters.maximum_disparity]; neighbourhoods[i].len()]
         })
         .collect::<Vec<_>>();
 
@@ -181,7 +181,7 @@ where
         .iter()
         .enumerate()
         .map(|(i, p)| {
-            compute_final_disparity(parameters.maximum_disparity as usize, &data_costs, i, p)
+            compute_final_disparity(parameters.maximum_disparity, &data_costs, i, p)
         })
         .collect()
 }
@@ -206,7 +206,7 @@ mod tests {
             use_zero_mean: false,
         };
 
-        let actual_neighbourhoods = (0..params.total_pixels as usize)
+        let actual_neighbourhoods = (0..params.total_pixels)
             .map(|i| compute_neighbours(&params, i))
             .collect::<Vec<_>>();
 
@@ -242,7 +242,7 @@ mod tests {
         };
 
         let actual_neighbourhoods = {
-            let mut neighbour_vecs = vec![Vec::<usize>::new(); params.total_pixels as usize];
+            let mut neighbour_vecs = vec![Vec::<usize>::new(); params.total_pixels];
             for (i, v) in neighbour_vecs.iter_mut().enumerate() {
                 *v = compute_neighbours(&params, i)
             }
@@ -291,7 +291,7 @@ mod tests {
             use_zero_mean: false,
         };
 
-        let actual_neighbourhoods = (0..params.total_pixels as usize)
+        let actual_neighbourhoods = (0..params.total_pixels)
             .map(|i| compute_neighbours(&params, i))
             .collect::<Vec<_>>();
 

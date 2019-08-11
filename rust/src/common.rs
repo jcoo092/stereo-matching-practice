@@ -2,11 +2,11 @@
 pub struct Parameters<'a> {
     pub left_image: &'a Vec<u8>,
     pub right_image: &'a Vec<u8>,
-    pub width: u32,
-    pub height: u32,
-    pub total_pixels: u32,
-    pub window_edge_size: u32,
-    pub maximum_disparity: u32,
+    pub width: usize,
+    pub height: usize,
+    pub total_pixels: usize,
+    pub window_edge_size: usize,
+    pub maximum_disparity: usize,
     pub use_zero_mean: bool,
 }
 

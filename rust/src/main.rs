@@ -76,12 +76,12 @@ struct CLIParameters {
         short = "w",
         help = "The size of a side of the square window you would like to use for the matching.  Currently only relevant to SAD and SSD."
     )]
-    window_size: Option<u32>,
+    window_size: Option<usize>,
     #[structopt(
         short = "d",
         help = "The maximum disparity size that the program will search out to (defaults to 32)."
     )]
-    maximum_disparity: Option<u32>,
+    maximum_disparity: Option<usize>,
     #[structopt(
         short = "a",
         help = "The algorithm you would like to use for the stereo matching."
@@ -91,7 +91,7 @@ struct CLIParameters {
         short = "n",
         help = "The number of iterations of the algorithm to carry out.  Currently only relevant to belief propagation."
     )]
-    number_of_iterations: Option<u32>,
+    number_of_iterations: Option<usize>,
     #[structopt(
         short = "z",
         help = "Set this flag if you would like the program to use the zero-mean version of the unary cost function.  (Currently does nothing)"
@@ -174,11 +174,11 @@ fn main() {
     let parameters = common::Parameters {
         left_image: &left_image_buffer,
         right_image: &right_image_buffer,
-        width: image_width,
-        height: image_height,
-        total_pixels: image_width * image_height,
-        window_edge_size: cli_parameters.window_size.unwrap_or(3u32),
-        maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32u32),
+        width: image_width as usize,
+        height: image_height as usize,
+        total_pixels: (image_width as usize) * (image_height as usize),
+        window_edge_size: cli_parameters.window_size.unwrap_or(3),
+        maximum_disparity: cli_parameters.maximum_disparity.unwrap_or(32),
         use_zero_mean: cli_parameters.use_zero_mean,
     };
 
@@ -191,7 +191,7 @@ fn main() {
             Algorithms::DynamicProgramming => unimplemented!(),
             Algorithms::BeliefPropagation => {
                 let bpparameters = beliefpropagation::BPParameters {
-                    number_of_iterations: cli_parameters.number_of_iterations.unwrap_or(10u32),
+                    number_of_iterations: cli_parameters.number_of_iterations.unwrap_or(10),
                     data_cost_function: |a, b| {
                         data::truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, a, b)
                     },
