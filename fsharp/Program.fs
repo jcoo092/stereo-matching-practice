@@ -1,10 +1,7 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open System
+﻿open System
 open Argu
 open System.IO
 open Common
-open SAD
 open DynamicProgramming
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.PixelFormats
@@ -98,8 +95,8 @@ let main argv =
         | SSD -> raise (NotImplementedException "This stereo matching algorithm has not yet been implemented")
         | DynamicProgramming ->
             let updatedMatchingParameters = {
-                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte //uint32
-                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte //uint32
+                leftImage = matchingParameters.leftImage |> Array.Parallel.map byte
+                rightImage = matchingParameters.rightImage |> Array.Parallel.map byte
                 width = matchingParameters.width
                 height = matchingParameters.height
                 totalPixels = matchingParameters.width * matchingParameters.height
@@ -121,8 +118,8 @@ let main argv =
             }
 
             let bpparameters : BeliefPropagation.BPParameters = {
-                dataFunction = (Data.FHTruncatedLinear Smoothness.LAMBDA_FH Smoothness.TAU_FH)
-                smoothnessFunction = (Smoothness.truncatedLinear Smoothness.D_FH)
+                dataFunction = (Data.FHTruncatedLinear Common.LAMBDA_FH Common.TAU_FH)
+                smoothnessFunction = (Smoothness.truncatedLinear Common.D_FH)
                 iterations = results.TryGetResult NumberOfIterations |> Option.defaultValue 3
             }
             BeliefPropagation.beliefpropagation updatedMatchingParameters bpparameters
