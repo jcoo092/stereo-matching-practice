@@ -1,0 +1,12 @@
+{
+    "rust-client.revealOutputChannelOn": "warn",
+    "rust.clippy_preference": "on",
+    "rust-client.updateOnStartup": true,
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    },
+    "debug.allowBreakpointsEverywhere": true
+}

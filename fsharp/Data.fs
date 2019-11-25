@@ -14,21 +14,6 @@ let inline manualAbsoluteDifference a b =
             a - b
     float32 retVal
 
-let inline arraysSquaredDifference (a: ^a []) (b: ^a []) i d =
-    let a' = a.[i]
-    let b' = b.[i - d]
-    squaredDifference a' b'
-
-let inline arraysAbsoluteDifference (a: ^a[]) (b: ^a[]) i d =
-    let a' = a.[i]
-    let b' = b.[i - d]
-    absoluteDifference a' b'
-
-let inline slicesSquaredDifference (a: ReadOnlyMemory< ^a >) (b: ReadOnlyMemory< ^a >) i d =
-    let a' = a.Span.[i]
-    let b' = b.Span.[i - d]
-    squaredDifference a' b'
-
 // This function is directly lifted from A Pixel Dissimilarity Measure That Is Insensitive to Image Sampling (1998) by Birchfield & Tomasi
 // Interestingly, in their notation they seem to operate on the basis of a functional representation of the image
 // That is, they have a function that takes a given coordinate, and returns the corresponding intensity
@@ -57,19 +42,12 @@ let computeDataCosts (parameters : Common.Parameters) (dataCostFunction : byte -
     let data = Array.zeroCreate (parameters.width * parameters.height)
     for x = 0 to (parameters.width - 1) do
         for y = 0 to (parameters.height - 1) do
-            // let leftIdx = x + y * parameters.width
-            // let endOfRight = System.Math.Clamp(x - parameters.maximumDisparity, 0, leftIdx)
-            // let currentPixelData = Array.zeroCreate (x - endOfRight + 1)
-            // for d = (x - endOfRight) downto 0 do
-            //     currentPixelData.[d] <- dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
-            // data.[leftIdx] <- currentPixelData
             let leftIdx = x + y * parameters.width
             let currentPixelData = Array.zeroCreate (parameters.maximumDisparity + 1)
             for d = parameters.maximumDisparity downto 0 do
                 currentPixelData.[d] <-
                     if x - d < 0 then
-                        //dataCostFunction 255uy 0uy
-                        0.0f
+                        dataCostFunction 255uy 0uy
                     else
                         dataCostFunction parameters.leftImage.[leftIdx] parameters.rightImage.[leftIdx - d]
             data.[leftIdx] <- currentPixelData

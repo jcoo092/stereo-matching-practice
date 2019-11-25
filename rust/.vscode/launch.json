@@ -1,0 +1,33 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            // "program": "enter program name, for example ${workspaceFolder}/a.exe",
+            "program": "${workspaceFolder}/target/debug/stereo-matching-practice.exe",
+            "args": [
+                "-l",
+                "${workspaceFolder}/../Images/Input/tsukuba-imL.png",
+                "-r",
+                "${workspaceFolder}/../Images/Input/tsukuba-imR.png",
+                "-o",
+                "${workspaceFolder}/../Images/Output",
+                "-a",
+                "bp",
+                "-d",
+                "16",
+                "-n",
+                "2",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        }
+    ]
+}

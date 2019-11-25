@@ -1,7 +1,6 @@
 module Common
 
 open System
-//open FSharp.Span.Utils
 
 type LeftOrRight = | Left | Right
 
@@ -16,6 +15,17 @@ type Parameters = {
     maximumDisparity: int
     zeroMean: bool
 }
+
+[<Literal>]
+let LAMBDA_FH = 0.07f
+[<Literal>]
+let TAU_FH = 15.0f
+[<Literal>]
+let C_FH = 1.0f
+[<Literal>]
+let D_FH = 1.7f
+[<Literal>]
+let CUSTOM_EPSILON = 7.62939453125e-5f // Very small value, equivalent to 1e-17 (if I remember rightly)
 
 // Taken from 'Average of Integers', listed at http://aggregate.org/MAGIC/#Average%20of%20Integers accessed on 14 June 2019
 let inline twoParameterMean a b =
@@ -41,36 +51,6 @@ let buildArraySlices parameters usedImage =
                         | Right -> parameters.rightImage
     Array.chunkBySize parameters.width subjectArray
 
-let buildArraySegments parameters usedImage =
-    let subjectArray = match usedImage with
-                        | Left -> parameters.leftImage
-                        | Right -> parameters.rightImage
-    let width = parameters.width
-    let slices = Array.zeroCreate parameters.height
-    for i in 0..(parameters.height - 1) do
-        slices.[i] <- ArraySegment(subjectArray, i * width, width)
-    slices
-
-let argminArray arr =
-    let min = Array.min arr
-    Array.findIndex ((=) min) arr
-
 let argminFloat32Array arr =
         let min = Array.min arr
-        //printfn "The current min is: %f" min
         Array.findIndex (float32Equality min) arr
-
-// The below is by Tomas Petricek
-// Directly copied from http://fssnip.net/1R/title/Take-every-Nth-element-of-sequence
-// [snippet:Efficient version using enumerator]
-let everyNth n (input:seq<_>) =
-  seq { use en = input.GetEnumerator()
-        // Call MoveNext at most 'n' times (or return false earlier)
-        let rec nextN n =
-          if n = 0 then true
-          else en.MoveNext() && (nextN (n - 1))
-        // While we can move n elements forward...
-        while nextN n do
-          // Retrun each nth element
-          yield en.Current }
-// [/snippet]
