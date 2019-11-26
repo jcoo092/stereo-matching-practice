@@ -1,4 +1,6 @@
 use image::GenericImageView;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -226,4 +228,24 @@ fn main() {
         "Full running time was {:?}.",
         end_time.duration_since(start_time)
     );
+
+    fn parseFileToNumbersArray(filename: &str) -> Vec<Vec<u8>> {
+        let input = std::fs::File::open(filename).unwrap();
+        let buffered = std::io::BufReader::new(input);
+        // let all_lines = buffered.lines();
+        // all_lines
+        // buffered
+        //     .lines()
+        //     .map(|line| line.unwrap().split(',').map(|n| n.parse::<u8>()))
+        //     .collect::<Vec<_>>()
+        buffered
+            .lines()
+            .map(|line| line.unwrap())
+            .map(|line| line.split(','))
+            .map(|line| line.map(|n| n.parse::<u8>().unwrap()).collect::<Vec<_>>())
+            .collect::<Vec<_>>()
+    }
 }
+
+#[cfg(test)]
+mod tests {}
