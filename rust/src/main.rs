@@ -1,4 +1,10 @@
-use image::GenericImageView;
+// This is a special-purpose branch of the program which will never be merged into master
+// It is specifically made to help me with writing examples of the process elsewhere
+// by writing out the complete text version of what I'm doing
+
+use std::io::BufRead;
+use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -162,15 +168,22 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
+    // let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
 
-    let (image_width, image_height) = left_image.dimensions();
+    // let (image_width, image_height) = left_image.dimensions();
 
-    let left_image_buffer = left_image.grayscale().raw_pixels();
-    let right_image_buffer = image::open(cli_parameters.right_image_path)
-        .expect("Couldn't open right image")
-        .grayscale()
-        .raw_pixels();
+    // let left_image_buffer = left_image.grayscale().raw_pixels();
+    // let right_image_buffer = image::open(cli_parameters.right_image_path)
+    //     .expect("Couldn't open right image")
+    //     .grayscale()
+    //     .raw_pixels();
+
+    let left_image_buffer = parse_file_to_numbers_array(&cli_parameters.left_image_path);
+    let right_image_buffer = parse_file_to_numbers_array(&cli_parameters.right_image_path);
+
+    let (image_width, image_height) =
+        determine_image_width_and_height_from_file(&cli_parameters.left_image_path);
+
     let parameters = common::Parameters {
         left_image: &left_image_buffer,
         right_image: &right_image_buffer,
@@ -206,15 +219,38 @@ fn main() {
 
     let algo_end_time = std::time::Instant::now();
 
-    let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
-        image_width,
-        image_height,
-        output_vec,
-    )
-    .expect("Error creating the output image!");
-    imageproc::contrast::equalize_histogram_mut(&mut output_image);
+    // let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
+    //     image_width,
+    //     image_height,
+    //     output_vec,
+    // )
+    // .expect("Error creating the output image!");
+    // imageproc::contrast::equalize_histogram_mut(&mut output_image);
 
-    assert!(output_image.save(output_filename).is_ok());
+    // assert!(output_image.save(output_filename).is_ok());
+
+    let mut output_file = std::io::LineWriter::new(std::fs::File::create(output_filename).unwrap());
+    // output_file.write_all(b"Left Image:\n").unwrap();
+    // // output_file.write(&left_image_buffer);
+    // left_image_buffer
+    //     .chunks(image_width)
+    //     .map(|chunk| output_file.write(chunk))
+    //     .all(|r| r.is_ok());
+    write_image_to_file(&mut output_file, &left_image_buffer, image_width, "Left");
+
+    // output_file.write_all(b"\n\nRight Image:\n").unwrap();
+    // right_image_buffer
+    //     .chunks(image_width)
+    //     .map(|chunk| output_file.write(chunk))
+    //     .all(|r| r.is_ok());
+    write_image_to_file(&mut output_file, &right_image_buffer, image_width, "Right");
+
+    // output_file.write_all(b"\n\nOuput Image:\n").unwrap();
+    // output_vec
+    //     .chunks(image_width)
+    //     .map(|chunk| output_file.write(chunk))
+    //     .all(|r| r.is_ok());
+    write_image_to_file(&mut output_file, &output_vec, image_width, "Output");
 
     let end_time = std::time::Instant::now();
 
@@ -226,4 +262,116 @@ fn main() {
         "Full running time was {:?}.",
         end_time.duration_since(start_time)
     );
+}
+
+fn parse_file_to_numbers_array(filename: &PathBuf) -> Vec<u8> {
+    let buffered = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
+    parse_buffer_to_numbers_array(buffered)
+}
+
+fn parse_buffer_to_numbers_array<U: BufRead>(buf: U) -> Vec<u8> {
+    buf.lines()
+        .flat_map(|line| {
+            line.unwrap()
+                .split(',')
+                .map(|n| n.parse::<u8>().unwrap())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
+}
+
+fn determine_image_width_and_height_from_file(filename: &PathBuf) -> (usize, usize) {
+    let mut buffered = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
+    let width = buffered
+        .by_ref()
+        .lines()
+        .peekable()
+        .peek()
+        .unwrap()
+        .as_ref()
+        .unwrap()
+        .split(',')
+        .count();
+
+    let height = buffered.lines().count();
+
+    (width, height + 1)
+}
+
+fn write_image_to_file(
+    writer: &mut std::io::LineWriter<std::fs::File>,
+    vec_to_write: &[u8],
+    image_width: usize,
+    image_name: &str,
+) {
+    writer
+        .write_fmt(format_args!("\n\n{} Image:\n", image_name))
+        .unwrap();
+    vec_to_write
+        .chunks(image_width)
+        .for_each(|chunk| writer.write_fmt(format_args!("{:?}\n", chunk)).unwrap());
+    writer
+        .flush()
+        .expect("Failed on flushing the write to the image");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::determine_image_width_and_height_from_file;
+    use super::parse_buffer_to_numbers_array;
+    use super::parse_file_to_numbers_array;
+    use super::write_image_to_file;
+
+    #[test]
+    fn test_parse_file_to_numbers_array() {
+        let expected: Vec<u8> = vec![
+            19, 20, 34, 159, 167, 20, 21, 103, 191, 173, 18, 60, 189, 191, 199, 53, 185, 197, 201,
+            198, 175, 205, 195, 198, 203,
+        ];
+        assert_eq!(
+            expected,
+            parse_file_to_numbers_array(&std::path::PathBuf::from("leftimage.txt"))
+        );
+    }
+
+    #[test]
+    fn test_parse_buffer_to_numbers_array() {
+        let actual_cursor = std::io::Cursor::new("19,20,34,159,167\n20,21,103,191,173\n18,60,189,191,199\n53,185,197,201,198\n175,205,195,198,203");
+
+        let expected: Vec<u8> = vec![
+            19, 20, 34, 159, 167, 20, 21, 103, 191, 173, 18, 60, 189, 191, 199, 53, 185, 197, 201,
+            198, 175, 205, 195, 198, 203,
+        ];
+
+        assert_eq!(expected, parse_buffer_to_numbers_array(actual_cursor));
+    }
+
+    #[test]
+    fn test_determine_image_width_and_height_from_file() {
+        let (expected_width, expected_height) = (5, 5);
+        let file = std::path::PathBuf::from("leftimage.txt");
+        let (actual_width, actual_height) = determine_image_width_and_height_from_file(&file);
+        assert!(expected_width == actual_width && expected_height == actual_height);
+    }
+
+    // Currently this one doesn't actually include an assertion - you have to eyeball the file manually
+    #[test]
+    fn test_write_image_to_file() {
+        let vec_to_write: Vec<u8> = vec![
+            19, 20, 34, 159, 167, 20, 21, 103, 191, 173, 18, 60, 189, 191, 199, 53, 185, 197, 201,
+            198, 175, 205, 195, 198, 203,
+        ];
+
+        let image_width = 5;
+        let image_name = "Test";
+        let mut test_output_writer = std::io::LineWriter::new(
+            std::fs::File::create("test_write_image_to_file.txt").unwrap(),
+        );
+        write_image_to_file(
+            &mut test_output_writer,
+            &vec_to_write,
+            image_width,
+            image_name,
+        );
+    }
 }
