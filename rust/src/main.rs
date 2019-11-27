@@ -1,6 +1,4 @@
 use image::GenericImageView;
-use std::io::BufRead;
-use std::io::BufReader;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -228,24 +226,86 @@ fn main() {
         "Full running time was {:?}.",
         end_time.duration_since(start_time)
     );
+}
 
-    fn parseFileToNumbersArray(filename: &str) -> Vec<Vec<u8>> {
-        let input = std::fs::File::open(filename).unwrap();
-        let buffered = std::io::BufReader::new(input);
-        // let all_lines = buffered.lines();
-        // all_lines
-        // buffered
-        //     .lines()
-        //     .map(|line| line.unwrap().split(',').map(|n| n.parse::<u8>()))
-        //     .collect::<Vec<_>>()
-        buffered
-            .lines()
-            .map(|line| line.unwrap())
-            .map(|line| line.split(','))
-            .map(|line| line.map(|n| n.parse::<u8>().unwrap()).collect::<Vec<_>>())
-            .collect::<Vec<_>>()
-    }
+fn parse_file_to_numbers_array(filename: &str) -> Vec<Vec<u8>> {
+    // let input = std::fs::File::open(filename).unwrap();
+    // let buffered = std::io::BufReader::new(input);
+    let buffered = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
+
+    // buffered
+    //     .lines()
+    //     .map(|line| {
+    //         line.unwrap()
+    //             .split(',')
+    //             .map(|n| n.parse::<u8>().unwrap())
+    //             .collect::<Vec<_>>()
+    //     })
+    //     .collect::<Vec<_>>()
+    parse_buffer_to_numbers_array(buffered)
+}
+
+// fn parse_buffer_to_numbers_array<T: std::io::Read>(buf: std::io::BufReader<T>) -> Vec<Vec<u8>> {
+//     buf.lines()
+//         .map(|line| {
+//             line.unwrap()
+//                 .split(',')
+//                 .map(|n| n.parse::<u8>().unwrap())
+//                 .collect::<Vec<_>>()
+//         })
+//         .collect::<Vec<_>>()
+// }
+
+fn parse_buffer_to_numbers_array<U: std::io::BufRead>(buf: U) -> Vec<Vec<u8>> {
+    buf.lines()
+        .map(|line| {
+            line.unwrap()
+                .split(',')
+                .map(|n| n.parse::<u8>().unwrap())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::parse_buffer_to_numbers_array;
+    use super::parse_file_to_numbers_array;
+
+    #[test]
+    fn test_parse_file_to_numbers_array() {
+        let expected: Vec<Vec<u8>> = vec![
+            vec![19, 20, 34, 159, 167],
+            vec![20, 21, 103, 191, 173],
+            vec![18, 60, 189, 191, 199],
+            vec![53, 185, 197, 201, 198],
+            vec![175, 205, 195, 198, 203],
+        ];
+        assert_eq!(expected, parse_file_to_numbers_array("leftimage.txt"));
+    }
+
+    #[test]
+    fn test_parse_buffer_to_numbers_array() {
+        // let actual = vec![
+        //     "19,20,34,159,167",
+        //     "20,21,103,191,173",
+        //     "18,60,189,191,199",
+        //     "53,185,197,201,198",
+        //     "175,205,195,198,203",
+        // ];
+
+        // let actual_cursor = std::io::Cursor::new(actual);
+
+        let actual_cursor = std::io::Cursor::new("19,20,34,159,167\n20,21,103,191,173\n18,60,189,191,199\n53,185,197,201,198\n175,205,195,198,203");
+
+        let expected: Vec<Vec<u8>> = vec![
+            vec![19, 20, 34, 159, 167],
+            vec![20, 21, 103, 191, 173],
+            vec![18, 60, 189, 191, 199],
+            vec![53, 185, 197, 201, 198],
+            vec![175, 205, 195, 198, 203],
+        ];
+
+        assert_eq!(expected, parse_buffer_to_numbers_array(actual_cursor));
+    }
+}
