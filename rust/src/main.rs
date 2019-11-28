@@ -3,6 +3,8 @@
 // by writing out the complete text version of what I'm doing
 
 use std::io::BufRead;
+use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -227,6 +229,10 @@ fn main() {
 
     // assert!(output_image.save(output_filename).is_ok());
 
+    let mut output_file = std::io::LineWriter::new(std::fs::File::create(output_filename).unwrap());
+    output_file.write_all(b"Left Image:\n");
+    output_file.write(&left_image_buffer);
+
     let end_time = std::time::Instant::now();
 
     println!(
@@ -256,9 +262,10 @@ fn parse_buffer_to_numbers_array<U: BufRead>(buf: U) -> Vec<u8> {
 }
 
 fn determine_image_width_and_height_from_file(filename: &PathBuf) -> (usize, usize) {
-    let buffered = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
-    let buf_lines = buffered.lines();
-    let width = buf_lines
+    let mut buffered = std::io::BufReader::new(std::fs::File::open(filename).unwrap());
+    let width = buffered
+        .by_ref()
+        .lines()
         .peekable()
         .peek()
         .unwrap()
@@ -267,13 +274,14 @@ fn determine_image_width_and_height_from_file(filename: &PathBuf) -> (usize, usi
         .split(',')
         .count();
 
-    let height = buf_lines.count();
+    let height = buffered.lines().count();
 
-    (width, height)
+    (width, height + 1)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::determine_image_width_and_height_from_file;
     use super::parse_buffer_to_numbers_array;
     use super::parse_file_to_numbers_array;
 
@@ -299,5 +307,13 @@ mod tests {
         ];
 
         assert_eq!(expected, parse_buffer_to_numbers_array(actual_cursor));
+    }
+
+    #[test]
+    fn test_determine_image_width_and_height_from_file() {
+        let (expected_width, expected_height) = (5, 5);
+        let file = std::path::PathBuf::from("leftimage.txt");
+        let (actual_width, actual_height) = determine_image_width_and_height_from_file(&file);
+        assert!(expected_width == actual_width && expected_height == actual_height);
     }
 }
