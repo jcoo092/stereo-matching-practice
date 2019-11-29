@@ -10,6 +10,15 @@ pub struct BPParameters<T> {
     pub smoothness_cost_function: fn(usize, usize) -> T,
 }
 
+fn compute_coords(image_width: usize, index: usize) -> (usize, usize) {
+    (index % image_width, index / image_width)
+}
+
+fn coords_to_string(width_height: (usize, usize)) -> String {
+    let (width, height) = width_height;
+    format!("({}, {})", width, height)
+}
+
 fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usize> {
     let usize_width = parameters.width;
     let x = index % usize_width;
@@ -32,37 +41,37 @@ fn compute_neighbours(parameters: &common::Parameters, index: usize) -> Vec<usiz
     neighbour_vec
 }
 
-fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
-where
-    for<'x> T: Copy
-        + num::traits::identities::Zero
-        + num::traits::cast::FromPrimitive
-        + std::iter::Sum<&'x T>
-        + num::traits::NumOps
-        + num::traits::NumAssignOps,
-{
-    let mean = common::compute_mean_of_vec(cost_vec);
-    for c in cost_vec.iter_mut() {
-        *c -= mean;
-    }
-}
+// fn normalise_cost_vec<T>(cost_vec: &mut Vec<T>)
+// where
+//     for<'x> T: Copy
+//         + num::traits::identities::Zero
+//         + num::traits::cast::FromPrimitive
+//         + std::iter::Sum<&'x T>
+//         + num::traits::NumOps
+//         + num::traits::NumAssignOps,
+// {
+//     let mean = common::compute_mean_of_vec(cost_vec);
+//     for c in cost_vec.iter_mut() {
+//         *c -= mean;
+//     }
+// }
 
-fn normalise_all_messages<'b, T>(messages: &'b mut Vec<Vec<Vec<T>>>)
-where
-    for<'x> T: Copy
-        + num::traits::cast::FromPrimitive
-        + num::traits::identities::Zero
-        + std::iter::Sum<&'x T>
-        + num::traits::NumOps
-        + num::traits::NumAssignOps
-        + PartialOrd,
-{
-    for m in messages.iter_mut() {
-        for w in m.iter_mut() {
-            normalise_cost_vec(w);
-        }
-    }
-}
+// fn normalise_all_messages<'b, T>(messages: &'b mut Vec<Vec<Vec<T>>>)
+// where
+//     for<'x> T: Copy
+//         + num::traits::cast::FromPrimitive
+//         + num::traits::identities::Zero
+//         + std::iter::Sum<&'x T>
+//         + num::traits::NumOps
+//         + num::traits::NumAssignOps
+//         + PartialOrd,
+// {
+//     for m in messages.iter_mut() {
+//         for w in m.iter_mut() {
+//             normalise_cost_vec(w);
+//         }
+//     }
+// }
 
 fn find_index_in_neighbour(this_index: usize, neighbourhood: &[usize]) -> usize {
     neighbourhood
@@ -156,9 +165,18 @@ where
     };
 
     let mut writer = std::io::LineWriter::new(std::fs::File::create("bp_output.txt").unwrap());
+    // writer
+    //     .write_fmt(format_args!("Neighbourhoods are: {:?}\n\n", neighbourhoods))
+    //     .unwrap();
+
     writer
-        .write_fmt(format_args!("Neighbourhoods are: {:?}\n\n", neighbourhoods))
+        .write_fmt(format_args!(
+            "==========================\nData Costs\n==========================\n\n"
+        ))
         .unwrap();
+    data_costs
+        .chunks(parameters.width)
+        .for_each(|chunk| writer.write_fmt(format_args!("{:?}\n", chunk)).unwrap());
 
     let mut messages1 = (0..parameters.total_pixels)
         .map(|i| vec![vec![T::default(); parameters.maximum_disparity]; neighbourhoods[i].len()])
@@ -167,7 +185,13 @@ where
     let mut messages2: Vec<Vec<Vec<T>>> = messages1.clone();
 
     for i in 0..bpparameters.number_of_iterations {
-        print_messages(&mut writer, &messages1, i, &neighbourhoods);
+        print_messages(
+            &mut writer,
+            &messages1,
+            i,
+            &neighbourhoods,
+            parameters.width,
+        );
         update_messages(
             parameters,
             &data_costs,
@@ -177,7 +201,7 @@ where
             &mut messages2,
         );
 
-        normalise_all_messages(&mut messages2);
+        // normalise_all_messages(&mut messages2);
 
         std::mem::swap(&mut messages1, &mut messages2);
     }
@@ -194,6 +218,7 @@ fn print_messages<T: std::fmt::Debug>(
     messages: &[Vec<Vec<T>>],
     iteration_count: usize,
     neighbourhoods: &[Vec<usize>],
+    image_width: usize,
 ) {
     // writer
     //     .write_fmt(format_args!("\n\n{} Image:\n", image_name))
@@ -208,24 +233,32 @@ fn print_messages<T: std::fmt::Debug>(
 
     for (i, m) in messages.iter().enumerate() {
         writer
-            .write_fmt(format_args!("\n\nMessages from {}:\n", i))
+            .write_fmt(format_args!(
+                "\n\nMessages from {} [{}]:\n",
+                i,
+                coords_to_string(compute_coords(image_width, i))
+            ))
             .unwrap();
         for (j, n) in m.iter().enumerate() {
             writer
                 .write_fmt(format_args!(
-                    "  To {}:\n    {:?}\n",
-                    neighbourhoods[i][j], n
+                    "  To {} [{}]:\n    {:?}\n",
+                    neighbourhoods[i][j],
+                    coords_to_string(compute_coords(image_width, neighbourhoods[i][j])),
+                    n
                 ))
                 .unwrap();
         }
     }
 }
 
+// fn csv_messages() {}
+
 #[cfg(test)]
 mod tests {
     use super::compute_neighbours;
     use super::find_index_in_neighbour;
-    use super::normalise_cost_vec;
+    // use super::normalise_cost_vec;
     use crate::common;
 
     #[test]
@@ -303,16 +336,15 @@ mod tests {
     }
 
     #[test]
-    fn test_normalise_cost_vec_f32_one_to_five_ascending() {
-        let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
-        normalise_cost_vec(&mut test_vec);
-        let expected_result: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5]
-            .iter()
-            .map(|x| *x - 3.3)
-            .collect();
-        assert_eq!(test_vec, expected_result);
-    }
-
+    // fn test_normalise_cost_vec_f32_one_to_five_ascending() {
+    //     let mut test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+    //     normalise_cost_vec(&mut test_vec);
+    //     let expected_result: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5]
+    //         .iter()
+    //         .map(|x| *x - 3.3)
+    //         .collect();
+    //     assert_eq!(test_vec, expected_result);
+    // }
     #[test]
     fn test_find_index_in_neighbour_four_rows_three_columns() {
         let params = common::Parameters {

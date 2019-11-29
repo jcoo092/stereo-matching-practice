@@ -198,9 +198,7 @@ fn main() {
                     data_cost_function: |a, b| {
                         data::truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, a, b)
                     },
-                    smoothness_cost_function: |a, b| {
-                        smoothness::truncated_linear_f32_fh(common::D_FH, a, b)
-                    },
+                    smoothness_cost_function: |a, b| smoothness::potts_f32_fh(common::D_FH, a, b),
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)
             }
