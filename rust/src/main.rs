@@ -168,16 +168,6 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    // let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
-
-    // let (image_width, image_height) = left_image.dimensions();
-
-    // let left_image_buffer = left_image.grayscale().raw_pixels();
-    // let right_image_buffer = image::open(cli_parameters.right_image_path)
-    //     .expect("Couldn't open right image")
-    //     .grayscale()
-    //     .raw_pixels();
-
     let left_image_buffer = parse_file_to_numbers_array(&cli_parameters.left_image_path);
     let right_image_buffer = parse_file_to_numbers_array(&cli_parameters.right_image_path);
 
@@ -219,37 +209,9 @@ fn main() {
 
     let algo_end_time = std::time::Instant::now();
 
-    // let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
-    //     image_width,
-    //     image_height,
-    //     output_vec,
-    // )
-    // .expect("Error creating the output image!");
-    // imageproc::contrast::equalize_histogram_mut(&mut output_image);
-
-    // assert!(output_image.save(output_filename).is_ok());
-
     let mut output_file = std::io::LineWriter::new(std::fs::File::create(output_filename).unwrap());
-    // output_file.write_all(b"Left Image:\n").unwrap();
-    // // output_file.write(&left_image_buffer);
-    // left_image_buffer
-    //     .chunks(image_width)
-    //     .map(|chunk| output_file.write(chunk))
-    //     .all(|r| r.is_ok());
     write_image_to_file(&mut output_file, &left_image_buffer, image_width, "Left");
-
-    // output_file.write_all(b"\n\nRight Image:\n").unwrap();
-    // right_image_buffer
-    //     .chunks(image_width)
-    //     .map(|chunk| output_file.write(chunk))
-    //     .all(|r| r.is_ok());
     write_image_to_file(&mut output_file, &right_image_buffer, image_width, "Right");
-
-    // output_file.write_all(b"\n\nOuput Image:\n").unwrap();
-    // output_vec
-    //     .chunks(image_width)
-    //     .map(|chunk| output_file.write(chunk))
-    //     .all(|r| r.is_ok());
     write_image_to_file(&mut output_file, &output_vec, image_width, "Output");
 
     let end_time = std::time::Instant::now();

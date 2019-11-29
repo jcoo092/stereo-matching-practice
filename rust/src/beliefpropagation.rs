@@ -2,6 +2,7 @@ use crate::common;
 use crate::data;
 use crate::smoothness;
 use std::convert::TryInto;
+use std::io::Write;
 
 pub struct BPParameters<T> {
     pub number_of_iterations: usize,
@@ -154,15 +155,19 @@ where
         neighbour_vecs
     };
 
+    let mut writer = std::io::LineWriter::new(std::fs::File::create("bp_output.txt").unwrap());
+    writer
+        .write_fmt(format_args!("Neighbourhoods are: {:?}\n\n", neighbourhoods))
+        .unwrap();
+
     let mut messages1 = (0..parameters.total_pixels)
-        .map(|i| {
-            vec![vec![T::default(); parameters.maximum_disparity]; neighbourhoods[i].len()]
-        })
+        .map(|i| vec![vec![T::default(); parameters.maximum_disparity]; neighbourhoods[i].len()])
         .collect::<Vec<_>>();
 
     let mut messages2: Vec<Vec<Vec<T>>> = messages1.clone();
 
-    for _i in 0..bpparameters.number_of_iterations {
+    for i in 0..bpparameters.number_of_iterations {
+        print_messages(&mut writer, &messages1, i, &neighbourhoods);
         update_messages(
             parameters,
             &data_costs,
@@ -180,10 +185,40 @@ where
     messages1
         .iter()
         .enumerate()
-        .map(|(i, p)| {
-            compute_final_disparity(parameters.maximum_disparity, &data_costs, i, p)
-        })
+        .map(|(i, p)| compute_final_disparity(parameters.maximum_disparity, &data_costs, i, p))
         .collect()
+}
+
+fn print_messages<T: std::fmt::Debug>(
+    writer: &mut std::io::LineWriter<std::fs::File>,
+    messages: &[Vec<Vec<T>>],
+    iteration_count: usize,
+    neighbourhoods: &[Vec<usize>],
+) {
+    // writer
+    //     .write_fmt(format_args!("\n\n{} Image:\n", image_name))
+    //     .unwrap();
+
+    writer
+        .write_fmt(format_args!(
+            "\n\n---------------------------\nIteration #{}\n---------------------------\n\n",
+            iteration_count
+        ))
+        .unwrap();
+
+    for (i, m) in messages.iter().enumerate() {
+        writer
+            .write_fmt(format_args!("\n\nMessages from {}:\n", i))
+            .unwrap();
+        for (j, n) in m.iter().enumerate() {
+            writer
+                .write_fmt(format_args!(
+                    "  To {}:\n    {:?}\n",
+                    neighbourhoods[i][j], n
+                ))
+                .unwrap();
+        }
+    }
 }
 
 #[cfg(test)]
