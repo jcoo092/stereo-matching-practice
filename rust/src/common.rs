@@ -10,23 +10,25 @@ pub struct Parameters<'a> {
     pub use_zero_mean: bool,
 }
 
-pub const LAMBDA_FH: f32 = 0.07;
+// pub const LAMBDA_FH: f32 = 0.07;
+pub const LAMBDA_FH: f32 = 1.0;
 pub const TAU_FH: f32 = 15.0;
-pub const D_FH: f32 = 1.7;
+// pub const D_FH: f32 = 1.7;
+pub const D_FH: f32 = 2.0;
 
 // Blatantly stolen from StackOverflow...  unfortunately I have lost track of precisely where...
-pub fn compute_mean_of_vec<T>(input_vec: &[T]) -> T
-where
-    for<'x> T: Copy
-        + num::Zero
-        + std::ops::Add<T, Output = T>
-        + std::ops::Div<T, Output = T>
-        + num::FromPrimitive
-        + std::iter::Sum<&'x T>,
-{
-    let sum: T = input_vec.iter().sum();
-    sum / num::FromPrimitive::from_usize(input_vec.len()).unwrap()
-}
+// pub fn compute_mean_of_vec<T>(input_vec: &[T]) -> T
+// where
+//     for<'x> T: Copy
+//         + num::Zero
+//         + std::ops::Add<T, Output = T>
+//         + std::ops::Div<T, Output = T>
+//         + num::FromPrimitive
+//         + std::iter::Sum<&'x T>,
+// {
+//     let sum: T = input_vec.iter().sum();
+//     sum / num::FromPrimitive::from_usize(input_vec.len()).unwrap()
+// }
 
 pub fn argmin_of_vec<T>(input_vec: &[T]) -> usize
 where
@@ -49,22 +51,22 @@ where
 #[cfg(test)]
 mod tests {
     use super::argmin_of_vec;
-    use super::compute_mean_of_vec;
-    #[test]
-    fn test_compute_mean_of_vec_f32_five_fives() {
-        let test_vec = vec![5.0f32; 5];
-        let mean = compute_mean_of_vec(&test_vec);
-        let result = (mean - 5.0f32).abs();
-        assert!(result <= std::f32::EPSILON);
-    }
+    // use super::compute_mean_of_vec;
+    // #[test]
+    // fn test_compute_mean_of_vec_f32_five_fives() {
+    //     let test_vec = vec![5.0f32; 5];
+    //     let mean = compute_mean_of_vec(&test_vec);
+    //     let result = (mean - 5.0f32).abs();
+    //     assert!(result <= std::f32::EPSILON);
+    // }
 
-    #[test]
-    fn test_compute_mean_of_vec_f32_one_to_five_ascending() {
-        let test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
-        let mean = compute_mean_of_vec(&test_vec);
-        let result = (mean - 3.3f32).abs();
-        assert!(result <= std::f32::EPSILON);
-    }
+    // #[test]
+    // fn test_compute_mean_of_vec_f32_one_to_five_ascending() {
+    //     let test_vec: Vec<f32> = vec![1.1, 2.2, 3.3, 4.4, 5.5];
+    //     let mean = compute_mean_of_vec(&test_vec);
+    //     let result = (mean - 3.3f32).abs();
+    //     assert!(result <= std::f32::EPSILON);
+    // }
 
     #[test]
     fn test_argmin_of_vec_f32_five_to_one_descending() {

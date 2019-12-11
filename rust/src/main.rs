@@ -168,16 +168,6 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    // let left_image = image::open(cli_parameters.left_image_path).expect("Couldn't open left image");
-
-    // let (image_width, image_height) = left_image.dimensions();
-
-    // let left_image_buffer = left_image.grayscale().raw_pixels();
-    // let right_image_buffer = image::open(cli_parameters.right_image_path)
-    //     .expect("Couldn't open right image")
-    //     .grayscale()
-    //     .raw_pixels();
-
     let left_image_buffer = parse_file_to_numbers_array(&cli_parameters.left_image_path);
     let right_image_buffer = parse_file_to_numbers_array(&cli_parameters.right_image_path);
 
@@ -208,9 +198,7 @@ fn main() {
                     data_cost_function: |a, b| {
                         data::truncated_linear_f32_fh(common::LAMBDA_FH, common::TAU_FH, a, b)
                     },
-                    smoothness_cost_function: |a, b| {
-                        smoothness::truncated_linear_f32_fh(common::D_FH, a, b)
-                    },
+                    smoothness_cost_function: |a, b| smoothness::potts_f32_fh(common::D_FH, a, b),
                 };
                 beliefpropagation::belief_propagation(&parameters, &bpparameters)
             }
@@ -219,19 +207,10 @@ fn main() {
 
     let algo_end_time = std::time::Instant::now();
 
-    // let mut output_image = image::ImageBuffer::<image::Luma<u8>, Vec<u8>>::from_raw(
-    //     image_width,
-    //     image_height,
-    //     output_vec,
-    // )
-    // .expect("Error creating the output image!");
-    // imageproc::contrast::equalize_histogram_mut(&mut output_image);
-
-    // assert!(output_image.save(output_filename).is_ok());
-
     let mut output_file = std::io::LineWriter::new(std::fs::File::create(output_filename).unwrap());
-    output_file.write_all(b"Left Image:\n");
-    output_file.write(&left_image_buffer);
+    write_image_to_file(&mut output_file, &left_image_buffer, image_width, "Left");
+    write_image_to_file(&mut output_file, &right_image_buffer, image_width, "Right");
+    write_image_to_file(&mut output_file, &output_vec, image_width, "Output");
 
     let end_time = std::time::Instant::now();
 
@@ -279,11 +258,29 @@ fn determine_image_width_and_height_from_file(filename: &PathBuf) -> (usize, usi
     (width, height + 1)
 }
 
+fn write_image_to_file(
+    writer: &mut std::io::LineWriter<std::fs::File>,
+    vec_to_write: &[u8],
+    image_width: usize,
+    image_name: &str,
+) {
+    writer
+        .write_fmt(format_args!("\n\n{} Image:\n", image_name))
+        .unwrap();
+    vec_to_write
+        .chunks(image_width)
+        .for_each(|chunk| writer.write_fmt(format_args!("{:?}\n", chunk)).unwrap());
+    writer
+        .flush()
+        .expect("Failed on flushing the write to the image");
+}
+
 #[cfg(test)]
 mod tests {
     use super::determine_image_width_and_height_from_file;
     use super::parse_buffer_to_numbers_array;
     use super::parse_file_to_numbers_array;
+    use super::write_image_to_file;
 
     #[test]
     fn test_parse_file_to_numbers_array() {
@@ -315,5 +312,26 @@ mod tests {
         let file = std::path::PathBuf::from("leftimage.txt");
         let (actual_width, actual_height) = determine_image_width_and_height_from_file(&file);
         assert!(expected_width == actual_width && expected_height == actual_height);
+    }
+
+    // Currently this one doesn't actually include an assertion - you have to eyeball the file manually
+    #[test]
+    fn test_write_image_to_file() {
+        let vec_to_write: Vec<u8> = vec![
+            19, 20, 34, 159, 167, 20, 21, 103, 191, 173, 18, 60, 189, 191, 199, 53, 185, 197, 201,
+            198, 175, 205, 195, 198, 203,
+        ];
+
+        let image_width = 5;
+        let image_name = "Test";
+        let mut test_output_writer = std::io::LineWriter::new(
+            std::fs::File::create("test_write_image_to_file.txt").unwrap(),
+        );
+        write_image_to_file(
+            &mut test_output_writer,
+            &vec_to_write,
+            image_width,
+            image_name,
+        );
     }
 }
