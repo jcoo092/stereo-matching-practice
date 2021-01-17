@@ -6,42 +6,64 @@ module DynamicProgramming
 open Common
 open System
 
-let matchAlongScanline maxDisparity differenceFunction (leftLine : 'a [], rightLine : 'a []) =
+let diffWholeLine (leftLine: 'a []) (rightLine: 'a []) x d =
+    // printfn "line length is %d, x is %d and d is %d.  x - d = %d" (Array.length rightLine) x d (x - d)
+
+    Data.carefulAbsoluteDifference leftLine.[x] rightLine.[x - d]
+    |> uint32
+
+let matchAlongScanline maxDisparity differenceFunction (leftLine: 'a [], rightLine: 'a []) =
     let diffF = differenceFunction leftLine rightLine
     let lineLength = leftLine.Length
-    let forwardPass = Array2D.zeroCreate (maxDisparity + 1) lineLength
-    let backwardPass = Array2D.zeroCreate (maxDisparity + 1) lineLength
+
+    let forwardPass =
+        Array2D.zeroCreate lineLength (maxDisparity + 1)
+
+    let backwardPass =
+        Array2D.zeroCreate lineLength (maxDisparity + 1)
 
     let endOfLine = lineLength - 1
     let mutable emin = UInt32.MaxValue
     let mutable dmin = 0u
 
-    forwardPass.[0,0] <- diffF 0 0
+    forwardPass.[0, 0] <- diffF 0 0
+
     for x = 1 to endOfLine do
-        for d = 0 to (min (x - 1) maxDisparity) do
+        dmin <- 0u
+
+        // for d = 0 to ((min (x - 1) maxDisparity) - 1) do
+        for d = 0 to ((min (x - 1) maxDisparity)) do
             emin <- UInt32.MaxValue
-            for d' = (max 0 (d - 1)) to (min (x - 2) (maxDisparity)) do
+
+            for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity))) do
+                // for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity)) - 1) do
                 let error = diffF (x - 1) d'
+
                 if error < emin then
                     emin <- error
-                    dmin <- d' |> uint32
+                    dmin <- uint32 <| d'
 
-            forwardPass.[x,d] <- emin + diffF x d
+            forwardPass.[x, d] <- emin + (diffF x d)
             backwardPass.[x, d] <- dmin
 
     emin <- UInt32.MaxValue
     dmin <- 0u
 
-    for d in 0..(min endOfLine maxDisparity) do
+    for d in 0 .. ((min endOfLine maxDisparity)) do
+        // for d in 0 .. ((min endOfLine maxDisparity) - 1) do
         if forwardPass.[endOfLine, d] < emin then
             emin <- forwardPass.[endOfLine, d]
-            dmin <- d |> uint32
+            // dmin <- d |> uint32
+            dmin <- uint32 <| d
+
 
     let outputArray = Array.zeroCreate lineLength
     outputArray.[endOfLine] <- dmin
 
     for x = (endOfLine - 1) downto 0 do
-        let opi = outputArray.[x + 1] |> int
+        // for x = (endOfLine - 1) downto 0 do
+        // let opi = outputArray.[x + 1] |> int
+        let opi = int <| outputArray.[x + 1]
         outputArray.[x] <- backwardPass.[x + 1, opi]
 
     outputArray
@@ -49,5 +71,9 @@ let matchAlongScanline maxDisparity differenceFunction (leftLine : 'a [], rightL
 let dynamicProgramming parameters =
     let leftSlices = buildArraySlices parameters Left
     let rightSlices = buildArraySlices parameters Right
-    let _slicesZip = Array.zip leftSlices rightSlices
-    [||]
+    let slicesZip = Array.zip leftSlices rightSlices
+
+    let computed =
+        Array.Parallel.map (fun l -> matchAlongScanline parameters.maximumDisparity diffWholeLine l) slicesZip
+
+    Array.concat computed
