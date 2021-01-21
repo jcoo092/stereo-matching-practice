@@ -33,18 +33,25 @@ let matchAlongScanline maxDisparity differenceFunction (leftLine: 'a [], rightLi
 
         // for d = 0 to ((min (x - 1) maxDisparity) - 1) do
         for d = 0 to ((min (x - 1) maxDisparity)) do
-            emin <- UInt32.MaxValue
+            // emin <- UInt32.MaxValue
 
-            for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity))) do
-                // for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity)) - 1) do
-                let error = diffF (x - 1) d'
+            // for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity))) do
+            //     // for d' = (max 0 (d - 1)) to ((min (x - 2) (maxDisparity)) - 1) do
+            //     let error = forwardPass.[(x - 1), d']
+            //     // let (p, q) = minAndArgmin forwardPass.[(x - 1), *]
 
-                if error < emin then
-                    emin <- error
-                    dmin <- uint32 <| d'
+            //     if error < emin then
+            //         emin <- error
+            //         dmin <- uint32 <| d'
 
-            forwardPass.[x, d] <- emin + (diffF x d)
-            backwardPass.[x, d] <- dmin
+            let (em, dm) =
+                minAndArgmin forwardPass.[(x - 1), (max 0 (d - 1))..(min (x - 2) (maxDisparity))]
+
+            // forwardPass.[x, d] <- emin + (diffF x d)
+            // backwardPass.[x, d] <- dmin
+
+            forwardPass.[x, d] <- em + (diffF x d)
+            backwardPass.[x, d] <- uint32 <| dm
 
     emin <- UInt32.MaxValue
     dmin <- 0u
@@ -74,6 +81,7 @@ let dynamicProgramming parameters =
     let slicesZip = Array.zip leftSlices rightSlices
 
     let computed =
-        Array.Parallel.map (fun l -> matchAlongScanline parameters.maximumDisparity diffWholeLine l) slicesZip
+        Array.map (fun l -> matchAlongScanline parameters.maximumDisparity diffWholeLine l) slicesZip
+    // Array.Parallel.map (fun l -> matchAlongScanline parameters.maximumDisparity diffWholeLine l) slicesZip
 
     Array.concat computed
